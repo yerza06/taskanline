@@ -1,10 +1,16 @@
-"""Сборка FastAPI-приложения."""
+"""Сборка и запуск FastAPI-приложения.
+
+Запускается как модуль: `python -m app.main`. Отдельная команда `uvicorn` для этого
+не нужна — хост, порт и режим перезапуска уже описаны в настройках, и держать их
+вторым списком в CMD контейнера значит однажды их рассинхронизировать.
+"""
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Literal
 
 import structlog
+import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -55,10 +61,10 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=settings.app.cors_origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+        allow_origins=settings.cors.origins,
+        allow_credentials=settings.cors.allow_credentials,
+        allow_methods=settings.cors.allow_methods,
+        allow_headers=settings.cors.allow_headers,
     )
     register_exception_handlers(app)
 
@@ -77,3 +83,24 @@ def create_app() -> FastAPI:
 
 
 app = create_app()
+
+
+def run() -> None:
+    """Точка входа `python -m app.main`."""
+    settings = get_settings()
+    uvicorn.run(
+        # Строкой, а не объектом: иначе не работает ни reload, ни запуск в несколько
+        # воркеров — uvicorn импортирует приложение в каждом процессе сам.
+        "app.main:app",
+        host=settings.server.host,
+        port=settings.server.port,
+        reload=settings.server.reload,
+        # Свой конфиг логов uvicorn не навязывает: формат уже задал structlog,
+        # иначе одно и то же событие печатается дважды в двух разных форматах.
+        log_config=None,
+        access_log=False,
+    )
+
+
+if __name__ == "__main__":
+    run()

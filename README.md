@@ -44,8 +44,8 @@ docker compose --env-file .env -f deploy/docker-compose.dev.yml up -d
 # 4. Миграции
 uv run alembic -c backend/alembic.ini upgrade head
 
-# 5. API на http://localhost:8000
-uv run uvicorn app.main:app --reload
+# 5. API на http://localhost:8000 (SERVER__RELOAD=true — автоперезапуск при правке)
+uv run python -m app.main
 
 # 6. Веб-клиент на http://localhost:5173 (в отдельном терминале)
 cd frontend_client && bun install && bun run dev
@@ -55,7 +55,7 @@ cd frontend_client && bun install && bun run dev
 
 `--env-file .env` обязателен: без него compose не видит переменные из корневого `.env`,
 потому что project directory у него — каталог compose-файла. Если порт 5432 на хосте занят
-системным PostgreSQL, поменяй `POSTGRES_PORT` в `.env` и порт в `DB__URL` и `TEST_DATABASE_URL`.
+системным PostgreSQL, поменяй в `.env` и `POSTGRES_PORT`, и `DB__PORT`.
 
 ## Весь стек в контейнерах
 
@@ -78,8 +78,9 @@ API на `http://localhost:8000`.
 | Линтер и типы фронтенда | `cd frontend_client && bun run lint && bun run typecheck` |
 | Новая миграция | `uv run alembic -c backend/alembic.ini revision --autogenerate -m "описание"` |
 
-Тестам нужен поднятый PostgreSQL: базу `taskanline_test` фикстура создаёт и мигрирует сама.
-Другой адрес задаётся переменной `TEST_DATABASE_URL`.
+Тестам нужен поднятый PostgreSQL: подключение берётся из тех же `DB__*`, а имя базы
+подменяется на `TEST_DB_NAME` (по умолчанию `taskanline_test`) — фикстура создаёт её
+и накатывает миграции сама. Гонять тесты по рабочей базе нельзя даже случайно.
 
 ## Конфигурация
 
@@ -91,13 +92,21 @@ API на `http://localhost:8000`.
 
 | Группа | Префикс | Что внутри |
 |---|---|---|
-| `DatabaseSettings` | `DB__` | `DB__URL` — обязательна, драйвер только `asyncpg` |
-| `SecuritySettings` | `SECURITY__` | `SECURITY__SECRET_KEY` — обязателен, от 32 символов |
-| `AppSettings` | `APP__` | `APP__ENVIRONMENT`, `APP__PUBLIC_URL`, `APP__CORS_ORIGINS` |
-| `LogSettings` | `LOG__` | `LOG__LEVEL` |
+| `DatabaseSettings` | `DB__` | `USER`, `PASSWORD`, `NAME` — обязательны; `DRIVER`, `HOST`, `PORT` — с умолчаниями |
+| `SecuritySettings` | `SECURITY__` | `SECRET_KEY` — обязателен, от 32 символов |
+| `AppSettings` | `APP__` | `ENVIRONMENT`, `PUBLIC_URL` |
+| `CorsSettings` | `CORS__` | `ORIGINS`, `ALLOW_CREDENTIALS`, `ALLOW_METHODS`, `ALLOW_HEADERS` |
+| `ServerSettings` | `SERVER__` | `HOST`, `PORT`, `RELOAD` |
+| `LogSettings` | `LOG__` | `LEVEL` |
 
-В коде они читаются так же: `settings.db.url`, `settings.security.secret_key`,
-`settings.log.level`. `APP__CORS_ORIGINS` принимает и строку через запятую, и JSON-список.
+В коде они читаются так же: `settings.db.user`, `settings.security.secret_key`,
+`settings.log.level`. Строка подключения собирается из частей — `settings.db.url`, — и логин
+с паролем при этом экранируются: двоеточие или собака в пароле иначе разваливают URL.
+Списки (`CORS__*`) принимают и строку через запятую, и JSON-массив.
+
+Приложение запускается как модуль: `python -m app.main` читает `SERVER__HOST`, `SERVER__PORT`
+и `SERVER__RELOAD` и поднимает uvicorn сам — отдельной команды `uvicorn` с дублирующими
+флагами нет.
 
 ## Темы оформления
 

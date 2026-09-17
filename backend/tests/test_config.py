@@ -1,96 +1,139 @@
 """Настройки разбираются группами, а не одной плоской кучей."""
 
+import os
+
 import pytest
 from pydantic import ValidationError
 
 from app.core.config import Settings
 
-VALID_URL = "postgresql+asyncpg://user:pass@localhost:5432/db"
+DB_ENV = {
+    "DB__USER": "taskanline",
+    "DB__PASSWORD": "secret",
+    "DB__HOST": "db.example",
+    "DB__PORT": "6432",
+    "DB__NAME": "taskanline",
+}
 VALID_SECRET = "a" * 32
-
-
-def build(monkeypatch: pytest.MonkeyPatch, **env: str) -> Settings:
-    """Собирает Settings из чистого окружения, игнорируя .env разработчика."""
-    for key in list(env):
-        monkeypatch.setenv(key, env[key])
-    return Settings(_env_file=None)
+GROUP_PREFIXES = ("DB__", "SECURITY__", "APP__", "LOG__", "CORS__", "SERVER__")
 
 
 @pytest.fixture(autouse=True)
 def _clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for key in (
-        "DB__URL",
-        "SECURITY__SECRET_KEY",
-        "APP__ENVIRONMENT",
-        "APP__PUBLIC_URL",
-        "APP__CORS_ORIGINS",
-        "LOG__LEVEL",
-    ):
-        monkeypatch.delenv(key, raising=False)
+    """Окружение разработчика не должно просачиваться в тесты настроек."""
+    for key in list(os.environ):
+        if key.startswith(GROUP_PREFIXES):
+            monkeypatch.delenv(key, raising=False)
 
 
-def test_groups_are_filled_from_nested_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = build(
-        monkeypatch,
-        DB__URL=VALID_URL,
-        SECURITY__SECRET_KEY=VALID_SECRET,
-        APP__ENVIRONMENT="production",
-        LOG__LEVEL="DEBUG",
-    )
-
-    assert settings.db.url == VALID_URL
-    assert settings.security.secret_key == VALID_SECRET
-    assert settings.app.environment == "production"
-    assert settings.log.level == "DEBUG"
+def build(monkeypatch: pytest.MonkeyPatch, **env: str) -> Settings:
+    """Собирает Settings из чистого окружения, игнорируя .env разработчика."""
+    for key, value in env.items():
+        monkeypatch.setenv(key, value)
+    return Settings(_env_file=None)
 
 
-def test_optional_groups_have_defaults(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = build(monkeypatch, DB__URL=VALID_URL, SECURITY__SECRET_KEY=VALID_SECRET)
-
-    assert settings.app.environment == "local"
-    assert settings.app.public_url == "http://localhost:5173"
-    assert settings.log.level == "INFO"
+def build_valid(monkeypatch: pytest.MonkeyPatch, **extra: str) -> Settings:
+    """Валидный минимум, поверх которого тест меняет одно-два значения."""
+    return build(monkeypatch, **{**DB_ENV, "SECURITY__SECRET_KEY": VALID_SECRET, **extra})
 
 
-def test_cors_origins_accept_comma_separated_string(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = build(
-        monkeypatch,
-        DB__URL=VALID_URL,
-        SECURITY__SECRET_KEY=VALID_SECRET,
-        APP__CORS_ORIGINS="http://a.example, http://b.example",
-    )
+class TestDatabase:
+    def test_url_is_composed_from_parts(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(monkeypatch)
 
-    assert settings.app.cors_origins == ["http://a.example", "http://b.example"]
-
-
-def test_cors_origins_accept_json_list(monkeypatch: pytest.MonkeyPatch) -> None:
-    settings = build(
-        monkeypatch,
-        DB__URL=VALID_URL,
-        SECURITY__SECRET_KEY=VALID_SECRET,
-        APP__CORS_ORIGINS='["http://a.example"]',
-    )
-
-    assert settings.app.cors_origins == ["http://a.example"]
-
-
-def test_sync_database_driver_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
-    with pytest.raises(ValidationError, match="asyncpg"):
-        build(
-            monkeypatch,
-            DB__URL="postgresql://user:pass@localhost:5432/db",
-            SECURITY__SECRET_KEY=VALID_SECRET,
+        assert (
+            settings.db.url == "postgresql+asyncpg://taskanline:secret@db.example:6432/taskanline"
         )
 
+    def test_driver_defaults_to_asyncpg(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(monkeypatch)
 
-def test_short_secret_key_is_rejected(monkeypatch: pytest.MonkeyPatch) -> None:
-    with pytest.raises(ValidationError):
-        build(monkeypatch, DB__URL=VALID_URL, SECURITY__SECRET_KEY="слишком короткий")
+        assert settings.db.driver == "postgresql+asyncpg"
+
+    def test_special_characters_in_password_are_escaped(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        settings = build_valid(monkeypatch, DB__PASSWORD="p@ss:w/ord")
+
+        assert "p%40ss%3Aw%2Ford" in settings.db.url
+        assert settings.db.url.endswith("@db.example:6432/taskanline")
+
+    def test_sync_driver_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError, match="async"):
+            build_valid(monkeypatch, DB__DRIVER="postgresql+psycopg2")
+
+    def test_port_must_be_a_number(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError):
+            build_valid(monkeypatch, DB__PORT="не число")
+
+    def test_missing_required_fields_fail_at_startup(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError) as error:
+            build(monkeypatch, SECURITY__SECRET_KEY=VALID_SECRET)
+
+        assert any(item["loc"][0] == "db" for item in error.value.errors())
+
+    def test_password_is_hidden_in_repr(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Настройки попадают и в логи, и в трейсбеки — пароль там не нужен."""
+        settings = build_valid(monkeypatch)
+
+        assert "secret" not in repr(settings.db)
 
 
-def test_missing_required_groups_fail_at_startup(monkeypatch: pytest.MonkeyPatch) -> None:
-    with pytest.raises(ValidationError) as error:
-        build(monkeypatch)
+class TestCors:
+    def test_defaults(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(monkeypatch)
 
-    reported = {tuple(item["loc"]) for item in error.value.errors()}
-    assert ("db",) in reported or ("db", "url") in reported
+        assert settings.cors.origins == ["http://localhost:5173"]
+        assert settings.cors.allow_credentials is True
+        assert settings.cors.allow_methods == ["*"]
+        assert settings.cors.allow_headers == ["*"]
+
+    def test_lists_accept_comma_separated_string(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(
+            monkeypatch,
+            CORS__ORIGINS="http://a.example, http://b.example",
+            CORS__ALLOW_METHODS="GET, POST",
+        )
+
+        assert settings.cors.origins == ["http://a.example", "http://b.example"]
+        assert settings.cors.allow_methods == ["GET", "POST"]
+
+    def test_lists_accept_json(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(monkeypatch, CORS__ORIGINS='["http://a.example"]')
+
+        assert settings.cors.origins == ["http://a.example"]
+
+    def test_flag_is_parsed_as_boolean(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(monkeypatch, CORS__ALLOW_CREDENTIALS="false")
+
+        assert settings.cors.allow_credentials is False
+
+
+class TestOtherGroups:
+    def test_groups_with_defaults_need_no_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(monkeypatch)
+
+        assert settings.app.environment == "local"
+        assert settings.log.level == "INFO"
+        assert settings.server.host == "0.0.0.0"
+        assert settings.server.port == 8000
+        assert settings.server.reload is False
+
+    def test_values_come_from_nested_env_vars(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(
+            monkeypatch,
+            APP__ENVIRONMENT="production",
+            LOG__LEVEL="DEBUG",
+            SERVER__PORT="9000",
+            SERVER__RELOAD="true",
+        )
+
+        assert settings.app.environment == "production"
+        assert settings.log.level == "DEBUG"
+        assert settings.server.port == 9000
+        assert settings.server.reload is True
+
+    def test_short_secret_key_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError):
+            build_valid(monkeypatch, SECURITY__SECRET_KEY="короткий")

@@ -20,7 +20,8 @@ def app_without_database(monkeypatch: pytest.MonkeyPatch) -> Iterator[FastAPI]:
     """Приложение, указывающее на заведомо недоступный PostgreSQL."""
     from app.main import create_app
 
-    monkeypatch.setenv("DB__URL", "postgresql+asyncpg://nobody:nobody@127.0.0.1:1/nowhere")
+    monkeypatch.setenv("DB__HOST", "127.0.0.1")
+    monkeypatch.setenv("DB__PORT", "1")
     config.get_settings.cache_clear()
     database.get_engine.cache_clear()
     try:

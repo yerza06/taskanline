@@ -1,25 +1,27 @@
-"""Общие фикстуры тестов.
-
-Переменные окружения выставляются до импорта приложения: `Settings` читает их при
-первом обращении, и подменять их позже уже поздно.
-"""
-
 import os
 from pathlib import Path as _Path
 
 from dotenv import dotenv_values
 
-# Адрес тестовой базы ищем там же, где его держит разработчик: в окружении, затем
-# в корневом .env. Иначе `uv run pytest` требует экспортировать переменную руками.
+# Параметры подключения берём там же, где их держит разработчик: окружение, затем
+# корневой .env, затем разумные значения по умолчанию. Имя базы всегда своё —
+# гонять тесты по рабочей базе нельзя даже случайно.
 _ROOT = _Path(__file__).resolve().parents[2]
 _DOTENV = dotenv_values(_ROOT / ".env") if (_ROOT / ".env").exists() else {}
 
-TEST_DATABASE_URL = (
-    os.environ.get("TEST_DATABASE_URL")
-    or _DOTENV.get("TEST_DATABASE_URL")
-    or "postgresql+asyncpg://taskanline:taskanline@localhost:5432/taskanline_test"
+_DB_DEFAULTS = {
+    "DB__USER": "taskanline",
+    "DB__PASSWORD": "taskanline",
+    "DB__HOST": "localhost",
+    "DB__PORT": "5432",
+}
+
+for _key, _fallback in _DB_DEFAULTS.items():
+    os.environ.setdefault(_key, _DOTENV.get(_key) or _fallback)
+
+os.environ["DB__NAME"] = (
+    os.environ.get("TEST_DB_NAME") or _DOTENV.get("TEST_DB_NAME") or "taskanline_test"
 )
-os.environ.setdefault("DB__URL", TEST_DATABASE_URL)
 os.environ.setdefault("SECURITY__SECRET_KEY", "test-secret-key-at-least-32-characters-long")
 os.environ.setdefault("APP__ENVIRONMENT", "ci")
 
@@ -36,10 +38,14 @@ from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine  # noqa: E402
 from sqlalchemy.pool import NullPool  # noqa: E402
 
+from app.core.config import get_settings  # noqa: E402
 from app.core.database import get_engine, get_session  # noqa: E402
 from app.main import create_app  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
+
+# Тот же URL, что соберёт приложение: одна дорога до базы, а не две расходящиеся.
+TEST_DATABASE_URL = get_settings().db.url
 
 # Таблица-зонд существует только в тестовой базе: на ней проверяется, что фикстура
 # действительно откатывает транзакцию между тестами.

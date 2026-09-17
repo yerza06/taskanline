@@ -23,12 +23,18 @@ services:
       context: ..
       dockerfile: backend/Dockerfile
     environment:
-      DB__URL: postgresql+asyncpg://${POSTGRES_USER:-taskanline}:${POSTGRES_PASSWORD:-taskanline}@postgres:5432/${POSTGRES_DB:-taskanline}
+      DB__USER: ${POSTGRES_USER:-taskanline}
+      DB__PASSWORD: ${POSTGRES_PASSWORD:-taskanline}
+      DB__NAME: ${POSTGRES_DB:-taskanline}
+      # Хост — имя сервиса в сети compose, порт всегда внутренний 5432:
+      # POSTGRES_PORT публикует базу на хост и к этой связи отношения не имеет.
+      DB__HOST: postgres
+      DB__PORT: 5432
       SECURITY__SECRET_KEY: ${SECURITY__SECRET_KEY:?SECURITY__SECRET_KEY обязателен — см. deploy/.env.example}
       APP__PUBLIC_URL: ${APP__PUBLIC_URL:-http://localhost:8080}
       APP__ENVIRONMENT: ${APP__ENVIRONMENT:-production}
       LOG__LEVEL: ${LOG__LEVEL:-INFO}
-      APP__CORS_ORIGINS: ${APP__CORS_ORIGINS:-http://localhost:8080}
+      CORS__ORIGINS: ${CORS__ORIGINS:-http://localhost:8080}
     ports:
       - "8000:8000"
     depends_on:

@@ -46,7 +46,11 @@ jobs:
           --health-retries 10
     env:
       # Тестовую базу создаёт и мигрирует фикстура migrated_database.
-      TEST_DATABASE_URL: postgresql+asyncpg://taskanline:taskanline@localhost:5432/taskanline_test
+      DB__USER: taskanline
+      DB__PASSWORD: taskanline
+      DB__HOST: localhost
+      DB__PORT: 5432
+      TEST_DB_NAME: taskanline_test
       SECURITY__SECRET_KEY: ci-secret-key-at-least-32-characters-long
       APP__ENVIRONMENT: ci
     steps:
