@@ -19,7 +19,7 @@ frontend_admin/   админ-панель: тот же стек, те же то�
 sdk/              Python-клиент API, общий для CLI и MCP              — этап 7
 cli/              CLI tkl                                             — этап 7
 mcp/              MCP-сервер                                          — этап 8
-deploy/           docker-compose, nginx, .env.example
+deploy/           docker-compose и конфигурация nginx
 docs/             спецификации (симлинк в Obsidian)
 ```
 
@@ -35,7 +35,7 @@ Python-часть — один uv-workspace: `uv sync` в корне подни�
 uv sync
 
 # 2. Конфигурация
-cp deploy/.env.example .env
+cp .env.example .env
 sed -i "s/^SECURITY__SECRET_KEY=.*/SECURITY__SECRET_KEY=$(openssl rand -hex 32)/" .env
 
 # 3. PostgreSQL для разработки
@@ -84,7 +84,7 @@ API на `http://localhost:8000`.
 
 ## Конфигурация
 
-Все переменные перечислены с комментариями в `deploy/.env.example` и разбираются
+Все переменные перечислены с комментариями в `.env.example` и разбираются
 через pydantic-settings в `backend/app/core/config.py`.
 
 Настройки сгруппированы по областям — по одной модели на группу, и группа задаёт префикс

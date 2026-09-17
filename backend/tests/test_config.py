@@ -1,6 +1,7 @@
 """Настройки разбираются группами, а не одной плоской кучей."""
 
 import os
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -108,6 +109,41 @@ class TestCors:
         settings = build_valid(monkeypatch, CORS__ALLOW_CREDENTIALS="false")
 
         assert settings.cors.allow_credentials is False
+
+
+class TestEnvExample:
+    """Пример конфигурации обязан оставаться рабочим, а не историческим."""
+
+    @staticmethod
+    def _example() -> dict[str, str]:
+        from dotenv import dotenv_values
+
+        path = Path(__file__).resolve().parents[2] / ".env.example"
+        return {key: value for key, value in dotenv_values(path).items() if value is not None}
+
+    def test_settings_build_from_example_as_is(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build(monkeypatch, **self._example())
+
+        assert settings.db.url.startswith("postgresql+asyncpg://taskanline:")
+        assert settings.server.port == 8000
+
+    def test_example_covers_every_group(self) -> None:
+        keys = self._example()
+
+        for prefix in GROUP_PREFIXES:
+            assert any(key.startswith(prefix) for key in keys), f"в примере нет ни одной {prefix}*"
+
+    def test_example_covers_every_field(self) -> None:
+        """Поле, добавленное в настройки и забытое в примере, — ловушка при разворачивании."""
+        keys = set(self._example())
+
+        missing = {
+            f"{group.upper()}__{field.upper()}"
+            for group, model in Settings.model_fields.items()
+            for field in model.annotation.model_fields  # type: ignore[union-attr]
+        } - keys
+
+        assert not missing, f"в .env.example не хватает: {sorted(missing)}"
 
 
 class TestOtherGroups:

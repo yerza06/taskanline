@@ -30,7 +30,7 @@ services:
       # POSTGRES_PORT публикует базу на хост и к этой связи отношения не имеет.
       DB__HOST: postgres
       DB__PORT: 5432
-      SECURITY__SECRET_KEY: ${SECURITY__SECRET_KEY:?SECURITY__SECRET_KEY обязателен — см. deploy/.env.example}
+      SECURITY__SECRET_KEY: ${SECURITY__SECRET_KEY:?SECURITY__SECRET_KEY обязателен — см. .env.example в корне}
       APP__PUBLIC_URL: ${APP__PUBLIC_URL:-http://localhost:8080}
       APP__ENVIRONMENT: ${APP__ENVIRONMENT:-production}
       LOG__LEVEL: ${LOG__LEVEL:-INFO}
