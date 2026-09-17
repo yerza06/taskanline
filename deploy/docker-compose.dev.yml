@@ -1,0 +1,23 @@
+# Только PostgreSQL: для локальной разработки и pytest.
+# Приложение при этом запускается с хоста через uv run uvicorn.
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: taskanline-postgres-dev
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-taskanline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskanline}
+      POSTGRES_DB: ${POSTGRES_DB:-taskanline}
+    ports:
+      # Порт хоста вынесен в переменную: 5432 часто занят системным PostgreSQL.
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - taskanline-postgres-dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskanline}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  taskanline-postgres-dev:

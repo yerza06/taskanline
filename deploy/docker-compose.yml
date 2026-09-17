@@ -1,0 +1,50 @@
+# Полный стек: PostgreSQL, API и веб-клиент за nginx.
+# Запуск из корня репозитория: docker compose -f deploy/docker-compose.yml up -d
+name: taskanline
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-taskanline}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-taskanline}
+      POSTGRES_DB: ${POSTGRES_DB:-taskanline}
+    volumes:
+      - taskanline-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-taskanline}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    environment:
+      DB__URL: postgresql+asyncpg://${POSTGRES_USER:-taskanline}:${POSTGRES_PASSWORD:-taskanline}@postgres:5432/${POSTGRES_DB:-taskanline}
+      SECURITY__SECRET_KEY: ${SECURITY__SECRET_KEY:?SECURITY__SECRET_KEY обязателен — см. deploy/.env.example}
+      APP__PUBLIC_URL: ${APP__PUBLIC_URL:-http://localhost:8080}
+      APP__ENVIRONMENT: ${APP__ENVIRONMENT:-production}
+      LOG__LEVEL: ${LOG__LEVEL:-INFO}
+      APP__CORS_ORIGINS: ${APP__CORS_ORIGINS:-http://localhost:8080}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend_client:
+    build:
+      context: ..
+      dockerfile: frontend_client/Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  taskanline-postgres:
