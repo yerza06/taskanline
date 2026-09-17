@@ -27,6 +27,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=0.24",
     "httpx>=0.28",
+    "python-dotenv>=1.0",
     "ruff>=0.14",
     "mypy>=1.14",
 ]
@@ -52,6 +53,18 @@ select = [
     "TID",       # tidy imports
     "RUF",
 ]
+ignore = [
+    # Комментарии и докстроки в проекте на русском: правила про «похожие на латиницу»
+    # символы срабатывают на каждой кириллической строке и ничего не ловят.
+    "RUF001",
+    "RUF002",
+    "RUF003",
+]
+
+[tool.ruff.lint.isort]
+# Пакеты воркспейса установлены в окружение, и без этой строки ruff считает их
+# сторонними и перемешивает с fastapi.
+known-first-party = ["app", "tests", "taskanline_sdk", "taskanline_cli", "taskanline_mcp"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*" = ["S101"]
@@ -67,8 +80,14 @@ exclude = ["backend/migrations/"]
 module = ["tests.*"]
 disallow_untyped_defs = false
 
+[[tool.mypy.overrides]]
+module = ["asyncpg.*"]
+ignore_missing_imports = true
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "session"
+# Фикстуры живут в том же цикле событий, что и тест: соединение asyncpg,
+# открытое в чужом цикле, падает с "attached to a different loop".
+asyncio_default_fixture_loop_scope = "function"
 testpaths = ["backend/tests"]
 addopts = "-q --strict-markers"
