@@ -1,0 +1,87 @@
+# Короткие команды разработки. Подробности — в README.md.
+# Список целей: make (или make help)
+
+COMPOSE := docker compose --env-file .env
+DEV_STACK := $(COMPOSE) -f deploy/docker-compose.dev.yml
+FULL_STACK := $(COMPOSE) -f deploy/docker-compose.yml
+ALEMBIC := uv run alembic -c backend/alembic.ini
+FRONT := frontend_client
+
+.DEFAULT_GOAL := help
+.PHONY: help install env run db-up db-down db-logs stack-up stack-down \
+        test test-back test-front lint format migrate migration migrate-down history
+
+help: ## Показать список команд
+	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+	| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2}'
+
+# --- Окружение ---------------------------------------------------------------
+
+install: env ## Поставить зависимости Python и фронтенда
+	uv sync
+	cd $(FRONT) && bun install
+
+env: .env ## Создать .env из примера, если его ещё нет
+
+.env:
+	cp .env.example .env
+	@echo "Создан .env — заполни SECURITY__SECRET_KEY: openssl rand -hex 32"
+
+# --- Запуск ------------------------------------------------------------------
+
+run: ## Запустить API (host, port и reload берутся из SERVER__*)
+	uv run python -m app.main
+
+db-up: env ## Поднять PostgreSQL для разработки и тестов
+	$(DEV_STACK) up -d
+
+db-down: ## Остановить PostgreSQL разработки
+	$(DEV_STACK) down
+
+db-logs: ## Логи PostgreSQL разработки
+	$(DEV_STACK) logs -f postgres
+
+stack-up: env ## Собрать и поднять весь стек в контейнерах
+	$(FULL_STACK) up -d --build
+
+stack-down: ## Остановить весь стек
+	$(FULL_STACK) down
+
+# --- Тесты и проверки --------------------------------------------------------
+
+test: test-back test-front ## Прогнать все тесты
+
+test-back: ## Тесты бэкенда. Аргументы: make test-back a="-k cors"
+	uv run pytest $(a)
+
+test-front: ## Тесты веб-клиента. Аргументы: make test-front a="src/app"
+	cd $(FRONT) && bun run vitest run $(a)
+
+lint: ## Линтеры и проверка типов на обеих половинах
+	uv run ruff check .
+	uv run ruff format --check .
+	uv run mypy backend
+	cd $(FRONT) && bun run lint && bun run typecheck
+
+format: ## Отформатировать и починить автоисправимое
+	uv run ruff check --fix .
+	uv run ruff format .
+
+# --- Миграции ----------------------------------------------------------------
+
+migrate: ## Применить миграции до последней
+	$(ALEMBIC) upgrade head
+
+migration: ## Создать миграцию: make migration name=users_auth rev=0001
+	@test -n "$(name)" || { echo 'Нужно имя: make migration name=users_auth rev=0001'; exit 1; }
+	@test -n "$(rev)" || echo 'Без rev= идентификатор будет случайным хешем, а спека нумерует миграции подряд'
+	$(ALEMBIC) revision --autogenerate -m "$(name)" $(if $(rev),--rev-id "$(rev)",)
+	@echo "Сгенерированную ревизию нужно прочитать глазами: автогенерация не видит"
+	@echo "переименований и переносов данных."
+
+migrate-down: ## Откатить последнюю миграцию
+	$(ALEMBIC) downgrade -1
+
+history: ## Показать историю миграций и текущую ревизию
+	$(ALEMBIC) history --verbose
+	$(ALEMBIC) current

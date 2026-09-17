@@ -24,6 +24,8 @@ implementation plan через `superpowers:writing-plans`; разработка
 
 ## Команды
 
+Частое обёрнуто в `Makefile`: `make` покажет список целей. Ниже — что за ними стоит.
+
 ```bash
 # Окружение (uv сам поставит Python 3.13)
 uv sync
@@ -34,7 +36,9 @@ docker compose --env-file .env -f deploy/docker-compose.dev.yml up -d
 
 # Миграции
 uv run alembic -c backend/alembic.ini upgrade head
-uv run alembic -c backend/alembic.ini revision --autogenerate -m "описание"
+uv run alembic -c backend/alembic.ini revision --autogenerate -m "описание" --rev-id 0001
+# или короче: make migration name=users_auth rev=0001
+# rev= обязателен по смыслу: миграции в спеке пронумерованы подряд, без него будет хеш
 
 # API (host/port/reload берутся из SERVER__*)
 uv run python -m app.main

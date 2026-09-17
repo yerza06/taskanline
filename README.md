@@ -69,6 +69,25 @@ API на `http://localhost:8000`.
 
 ## Команды
 
+Частое собрано в `Makefile` — `make` без аргументов покажет список:
+
+| Что | Make | Полная команда |
+|---|---|---|
+| Запустить API | `make run` | `uv run python -m app.main` |
+| Поднять и погасить БД | `make db-up` · `make db-down` | `docker compose --env-file .env -f deploy/docker-compose.dev.yml up -d` |
+| Все тесты | `make test` | — |
+| Тесты бэкенда с аргументами | `make test-back a="-k cors"` | `uv run pytest -k cors` |
+| Линтеры и типы | `make lint` · `make format` | — |
+| Применить миграции | `make migrate` | `uv run alembic -c backend/alembic.ini upgrade head` |
+| Создать миграцию | `make migration name=users_auth rev=0001` | `… revision --autogenerate -m … --rev-id …` |
+| Откатить последнюю | `make migrate-down` | `… downgrade -1` |
+| Весь стек в контейнерах | `make stack-up` · `make stack-down` | — |
+
+`rev=` задаёт идентификатор ревизии: без него alembic подставит случайный хеш, а миграции
+в спецификации пронумерованы подряд — `0001_users_auth`, `0002_org`.
+
+Полный список:
+
 | Что | Команда |
 |---|---|
 | Тесты бэкенда | `uv run pytest` |
