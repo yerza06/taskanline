@@ -36,10 +36,10 @@ uv sync
 
 # 2. Конфигурация
 cp deploy/.env.example .env
-sed -i "s/^SECRET_KEY=.*/SECRET_KEY=$(openssl rand -hex 32)/" .env
+sed -i "s/^SECURITY__SECRET_KEY=.*/SECURITY__SECRET_KEY=$(openssl rand -hex 32)/" .env
 
 # 3. PostgreSQL для разработки
-docker compose -f deploy/docker-compose.dev.yml up -d
+docker compose --env-file .env -f deploy/docker-compose.dev.yml up -d
 
 # 4. Миграции
 uv run alembic -c backend/alembic.ini upgrade head
@@ -53,10 +53,14 @@ cd frontend_client && bun install && bun run dev
 
 Проверка: `curl localhost:8000/health` отдаёт `{"status":"ok","version":"0.1.0","database":"ok"}`.
 
+`--env-file .env` обязателен: без него compose не видит переменные из корневого `.env`,
+потому что project directory у него — каталог compose-файла. Если порт 5432 на хосте занят
+системным PostgreSQL, поменяй `POSTGRES_PORT` в `.env` и порт в `DB__URL` и `TEST_DATABASE_URL`.
+
 ## Весь стек в контейнерах
 
 ```bash
-docker compose -f deploy/docker-compose.yml up -d --build
+docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
 ```
 
 Поднимает `postgres`, `backend` (миграции применяются при старте контейнера) и `frontend_client` —
@@ -80,8 +84,20 @@ API на `http://localhost:8000`.
 ## Конфигурация
 
 Все переменные перечислены с комментариями в `deploy/.env.example` и разбираются
-через pydantic-settings в `backend/app/core/config.py`. Обязательные — `DATABASE_URL`
-(драйвер обязательно `asyncpg`) и `SECRET_KEY` от 32 символов.
+через pydantic-settings в `backend/app/core/config.py`.
+
+Настройки сгруппированы по областям — по одной модели на группу, и группа задаёт префикс
+переменной через двойное подчёркивание:
+
+| Группа | Префикс | Что внутри |
+|---|---|---|
+| `DatabaseSettings` | `DB__` | `DB__URL` — обязательна, драйвер только `asyncpg` |
+| `SecuritySettings` | `SECURITY__` | `SECURITY__SECRET_KEY` — обязателен, от 32 символов |
+| `AppSettings` | `APP__` | `APP__ENVIRONMENT`, `APP__PUBLIC_URL`, `APP__CORS_ORIGINS` |
+| `LogSettings` | `LOG__` | `LOG__LEVEL` |
+
+В коде они читаются так же: `settings.db.url`, `settings.security.secret_key`,
+`settings.log.level`. `APP__CORS_ORIGINS` принимает и строку через запятую, и JSON-список.
 
 ## Темы оформления
 
