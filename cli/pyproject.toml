@@ -1,0 +1,19 @@
+[project]
+name = "taskanline-cli"
+description = "CLI tkl для TasKanLine"
+requires-python = ">=3.13,<3.14"
+dynamic = ["version"]
+dependencies = ["taskanline-sdk",]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.version]
+path = "src/taskanline_cli/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/taskanline_cli"]
+
+[tool.uv.sources]
+taskanline-sdk = { workspace = true }

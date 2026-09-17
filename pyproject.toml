@@ -1,0 +1,74 @@
+[project]
+name = "taskanline"
+version = "0.1.0"
+description = "TasKanLine — трекер задач для команд, работающих вместе с ИИ-агентами"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "taskanline-backend",
+    "taskanline-sdk",
+    "taskanline-cli",
+    "taskanline-mcp",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["backend", "sdk", "cli", "mcp"]
+
+[tool.uv.sources]
+taskanline-backend = { workspace = true }
+taskanline-sdk = { workspace = true }
+taskanline-cli = { workspace = true }
+taskanline-mcp = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.28",
+    "ruff>=0.14",
+    "mypy>=1.14",
+]
+
+# --- Инструменты ------------------------------------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+extend-exclude = ["backend/migrations/versions"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",    # pycodestyle
+    "F",         # pyflakes
+    "I",         # isort
+    "N",         # pep8-naming
+    "UP",        # pyupgrade
+    "B",         # bugbear
+    "A",         # builtins shadowing
+    "C4",        # comprehensions
+    "SIM",       # simplify
+    "TID",       # tidy imports
+    "RUF",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/*" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["backend/app"]
+exclude = ["backend/migrations/"]
+
+[[tool.mypy.overrides]]
+module = ["tests.*"]
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "session"
+testpaths = ["backend/tests"]
+addopts = "-q --strict-markers"
