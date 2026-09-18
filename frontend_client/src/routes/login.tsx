@@ -1,5 +1,8 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { z } from 'zod'
+
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { LoginForm } from '@/features/auth/components/LoginForm'
 
 /**
  * Куда вернуть человека после входа.
@@ -24,9 +27,22 @@ export const Route = createFileRoute('/login')({
 })
 
 function LoginPage() {
+  const { redirect } = Route.useSearch()
+
   return (
-    <div className="bg-canvas text-fg flex min-h-full items-center justify-center p-6">
-      <h1 className="text-xl font-medium">Вход</h1>
-    </div>
+    <AuthLayout
+      title="Вход"
+      description="Войдите, чтобы вернуться к задачам"
+      footer={
+        <>
+          Нет учётной записи?{' '}
+          <Link to="/register" className="text-accent underline underline-offset-4">
+            Зарегистрироваться
+          </Link>
+        </>
+      }
+    >
+      <LoginForm redirectTo={redirect} />
+    </AuthLayout>
   )
 }
