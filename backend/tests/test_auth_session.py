@@ -3,9 +3,10 @@
 from datetime import UTC, datetime, timedelta
 
 from httpx import AsyncClient, Response
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.modules.auth.models import RefreshToken
 from app.modules.users.models import User
 
 CSRF = {"X-Requested-With": "XMLHttpRequest"}
@@ -173,3 +174,104 @@ class TestLogin:
 
         assert response.status_code == 429
         assert int(response.headers["Retry-After"]) > 0
+
+
+class TestRefresh:
+    async def test_rotates_both_cookies(self, session_client: AsyncClient) -> None:
+        old_access = session_client.cookies["tkl_access"]
+        old_refresh = session_client.cookies["tkl_refresh"]
+
+        response = await session_client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        assert response.status_code == 200
+        assert session_client.cookies["tkl_refresh"] != old_refresh
+        assert session_client.cookies["tkl_access"] != old_access
+
+    async def test_new_session_keeps_working(self, session_client: AsyncClient) -> None:
+        await session_client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        response = await session_client.get("/api/v1/me")
+
+        assert response.status_code == 200
+
+    async def test_old_token_is_reported_as_reuse(
+        self, session_client: AsyncClient, client: AsyncClient
+    ) -> None:
+        old = session_client.cookies["tkl_refresh"]
+        await session_client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        client.cookies.set("tkl_refresh", old)
+        response = await client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "token_reuse_detected"
+
+    async def test_reuse_revokes_every_session(
+        self, session_client: AsyncClient, client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        """Повторное использование отозванного токена гасит все сессии, а не одну."""
+        old = session_client.cookies["tkl_refresh"]
+        await session_client.post("/api/v1/auth/refresh", headers=CSRF)
+        client.cookies.set("tkl_refresh", old)
+
+        await client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        alive = await db_session.scalar(
+            select(func.count()).select_from(RefreshToken).where(RefreshToken.revoked_at.is_(None))
+        )
+        assert alive == 0
+        again = await session_client.post("/api/v1/auth/refresh", headers=CSRF)
+        assert again.status_code == 401
+
+    async def test_without_cookie_is_401(self, client: AsyncClient) -> None:
+        response = await client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "invalid_token"
+
+    async def test_unknown_token_is_401(self, client: AsyncClient) -> None:
+        client.cookies.set("tkl_refresh", "a" * 43)
+
+        response = await client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "invalid_token"
+
+    async def test_expired_token_is_401(
+        self, session_client: AsyncClient, db_session: AsyncSession
+    ) -> None:
+        token = await db_session.scalar(select(RefreshToken))
+        assert token is not None
+        token.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+        await db_session.flush()
+
+        response = await session_client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        assert response.status_code == 401
+        assert response.json()["error"]["code"] == "invalid_token"
+
+
+class TestLogout:
+    async def test_revokes_token_and_clears_cookies(self, session_client: AsyncClient) -> None:
+        response = await session_client.post("/api/v1/auth/logout", headers=CSRF)
+
+        assert response.status_code == 204
+        assert not session_client.cookies.get("tkl_access")
+        assert not session_client.cookies.get("tkl_refresh")
+
+    async def test_revoked_token_cannot_refresh(
+        self, session_client: AsyncClient, client: AsyncClient
+    ) -> None:
+        refresh = session_client.cookies["tkl_refresh"]
+        await session_client.post("/api/v1/auth/logout", headers=CSRF)
+
+        client.cookies.set("tkl_refresh", refresh)
+        response = await client.post("/api/v1/auth/refresh", headers=CSRF)
+
+        assert response.status_code == 401
+
+    async def test_is_idempotent(self, client: AsyncClient) -> None:
+        """Выход без сессии — не ошибка: результат тот же, что и просили."""
+        response = await client.post("/api/v1/auth/logout", headers=CSRF)
+
+        assert response.status_code == 204

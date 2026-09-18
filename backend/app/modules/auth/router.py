@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import get_settings
 from app.core.database import get_session
 from app.core.rate_limit import rate_limit
-from app.modules.auth.cookies import set_session_cookies
+from app.modules.auth.cookies import clear_session_cookies, set_session_cookies
 from app.modules.auth.schemas import SessionResponse
 from app.modules.auth.service import AuthService
 from app.modules.users.schemas import LoginRequest, RegisterRequest, UserRead
@@ -77,3 +77,30 @@ async def login(
     )
     set_session_cookies(response, access=tokens.access, refresh=tokens.refresh)
     return SessionResponse(user=UserRead.model_validate(user))
+
+
+@router.post("/refresh", response_model=SessionResponse)
+async def refresh(
+    request: Request,
+    response: Response,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+) -> SessionResponse:
+    settings = get_settings()
+    user, tokens = await service.refresh(
+        request.cookies.get(settings.auth.refresh_cookie_name),
+        user_agent=request.headers.get("user-agent"),
+        ip=_client_ip(request),
+    )
+    set_session_cookies(response, access=tokens.access, refresh=tokens.refresh)
+    return SessionResponse(user=UserRead.model_validate(user))
+
+
+@router.post("/logout", status_code=204)
+async def logout(
+    request: Request,
+    response: Response,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+) -> None:
+    settings = get_settings()
+    await service.logout(request.cookies.get(settings.auth.refresh_cookie_name))
+    clear_session_cookies(response)

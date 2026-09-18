@@ -98,3 +98,47 @@ class AuthService:
             ip=ip,
         )
         return SessionTokens(access=issue_access_token(user.id), refresh=refresh)
+
+    async def refresh(
+        self, raw_token: str | None, *, user_agent: str | None, ip: str | None
+    ) -> tuple[User, SessionTokens]:
+        """Ротация: старый токен отзывается, выдаётся новый.
+
+        Повторное использование уже отозванного токена означает, что он утёк:
+        либо им воспользовался чужой, либо законный владелец идёт следом. Различить
+        эти случаи нельзя, поэтому отзываются все сессии пользователя разом.
+        """
+        if not raw_token:
+            raise ApiError(401, "invalid_token", "Сессия недействительна")
+
+        stored = await self._refresh_tokens.get_by_hash(hash_token(raw_token))
+        if stored is None:
+            raise ApiError(401, "invalid_token", "Сессия недействительна")
+
+        now = datetime.now(UTC)
+        if stored.revoked_at is not None:
+            await self._refresh_tokens.revoke_all_for_user(stored.user_id, at=now)
+            await self._session.commit()
+            raise ApiError(401, "token_reuse_detected", "Обнаружено повторное использование токена")
+
+        if stored.expires_at <= now:
+            raise ApiError(401, "invalid_token", "Сессия недействительна")
+
+        user = await self._users.get_by_id(stored.user_id)
+        if user is None or not user.is_active:
+            raise ApiError(401, "invalid_token", "Сессия недействительна")
+
+        await self._refresh_tokens.revoke(stored, at=now)
+        tokens = await self._issue_session(user, user_agent=user_agent, ip=ip)
+        await self._session.commit()
+        return user, tokens
+
+    async def logout(self, raw_token: str | None) -> None:
+        """Выход без действующей сессии — не ошибка: результат тот же, что просили."""
+        if not raw_token:
+            return
+
+        stored = await self._refresh_tokens.get_by_hash(hash_token(raw_token))
+        if stored is not None and stored.revoked_at is None:
+            await self._refresh_tokens.revoke(stored, at=datetime.now(UTC))
+            await self._session.commit()
