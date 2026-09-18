@@ -13,7 +13,9 @@ export function Alert({ children, className }: { children: ReactNode; className?
     <div
       role="alert"
       className={cn(
-        'border-danger bg-danger-surface text-danger rounded-md border px-3 py-2 text-sm',
+        // Толстая полоса слева вместо красного фона: в чёрно-белой палитре
+        // сообщение об ошибке отличается от обычного блока весом, а не оттенком.
+        'border-danger bg-danger-surface text-danger rounded-md border border-l-4 px-3 py-2 text-sm',
         className,
       )}
     >

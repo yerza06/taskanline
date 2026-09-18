@@ -20,7 +20,9 @@ const button = cva(
         primary: 'bg-accent text-accent-fg hover:opacity-90',
         secondary: 'border-border bg-surface hover:bg-surface-hover border',
         ghost: 'hover:bg-surface-hover',
-        danger: 'border-danger text-danger hover:bg-danger-surface border',
+        // Палитра чёрно-белая, и опасность нельзя показать цветом. Её показывает
+        // вес: полная по светлоте граница, полужирный текст и инверсия под курсором.
+        danger: 'border-danger text-danger hover:bg-danger hover:text-accent-fg border font-semibold',
       },
       size: {
         sm: 'h-8 px-3',

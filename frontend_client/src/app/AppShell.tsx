@@ -26,7 +26,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         role="banner"
         className="border-border bg-surface flex h-14 shrink-0 items-center gap-3 border-b px-4"
       >
-        <Link to="/profile" className="text-lg font-semibold tracking-tight">
+        <Link to="/profile" className="font-display text-lg font-semibold tracking-tight">
           TasKanLine
         </Link>
 

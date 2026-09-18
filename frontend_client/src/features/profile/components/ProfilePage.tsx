@@ -52,7 +52,7 @@ export function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl space-y-8 p-4 sm:p-6">
-      <h1 className="text-xl font-medium">Профиль</h1>
+      <h1 className="font-display text-2xl font-semibold tracking-tight">Профиль</h1>
 
       <section className="border-border bg-surface space-y-3 rounded-lg border p-4 sm:p-6">
         <h2 className="text-fg-muted text-xs tracking-wide uppercase">Учётная запись</h2>

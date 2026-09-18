@@ -27,7 +27,9 @@ export function Dialog({
       <RadixDialog.Portal>
         <RadixDialog.Overlay className="fixed inset-0 z-40 bg-black/50" />
         <RadixDialog.Content className="border-border bg-surface text-fg fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border p-5 shadow-xl">
-          <RadixDialog.Title className="pr-6 text-base font-medium">{title}</RadixDialog.Title>
+          <RadixDialog.Title className="font-display pr-6 text-lg font-semibold tracking-tight">
+            {title}
+          </RadixDialog.Title>
           <RadixDialog.Description className="text-fg-muted mt-1 text-sm">
             {description}
           </RadixDialog.Description>

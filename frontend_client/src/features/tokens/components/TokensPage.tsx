@@ -23,7 +23,7 @@ export function TokensPage() {
   return (
     <div className="mx-auto w-full max-w-3xl space-y-8 p-4 sm:p-6">
       <div>
-        <h1 className="text-xl font-medium">Токены доступа</h1>
+        <h1 className="font-display text-2xl font-semibold tracking-tight">Токены доступа</h1>
         <p className="text-fg-muted mt-1 max-w-prose text-sm">
           Токен заменяет пароль для агента и командной строки. Он действует от вашего имени, но
           только в пределах выданной области.
