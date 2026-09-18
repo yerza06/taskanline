@@ -20,6 +20,7 @@ from sqlalchemy import text
 from app import __version__
 from app.api import api_router
 from app.core.config import get_settings
+from app.core.csrf import CsrfMiddleware
 from app.core.database import get_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
@@ -63,6 +64,9 @@ def create_app() -> FastAPI:
     # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
+    app.add_middleware(CsrfMiddleware)
+    # RequestIdMiddleware добавляется последним и потому отрабатывает первым:
+    # отказ по CSRF должен попадать в лог с тем же request_id, что и запрос.
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(
         CORSMiddleware,
