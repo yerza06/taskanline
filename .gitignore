@@ -1,5 +1,5 @@
-# Спецификации живут в Obsidian-vault, здесь только симлинк
-docs/superpowers/
+# Спецификации живут в Obsidian-vault, здесь только симлинк. Планы — в репозитории.
+docs/superpowers/specs
 
 # Python
 .venv/

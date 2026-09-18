@@ -113,6 +113,7 @@ API на `http://localhost:8000`.
 |---|---|---|
 | `DatabaseSettings` | `DB__` | `USER`, `PASSWORD`, `NAME` — обязательны; `DRIVER`, `HOST`, `PORT` — с умолчаниями |
 | `SecuritySettings` | `SECURITY__` | `SECRET_KEY` — обязателен, от 32 символов |
+| `AuthSettings` | `AUTH__` | время жизни пары токенов, флаги cookie, лимиты на перебор |
 | `AppSettings` | `APP__` | `ENVIRONMENT`, `PUBLIC_URL` |
 | `CorsSettings` | `CORS__` | `ORIGINS`, `ALLOW_CREDENTIALS`, `ALLOW_METHODS`, `ALLOW_HEADERS` |
 | `ServerSettings` | `SERVER__` | `HOST`, `PORT`, `RELOAD` |
@@ -126,6 +127,35 @@ API на `http://localhost:8000`.
 Приложение запускается как модуль: `python -m app.main` читает `SERVER__HOST`, `SERVER__PORT`
 и `SERVER__RELOAD` и поднимает uvicorn сам — отдельной команды `uvicorn` с дублирующими
 флагами нет.
+
+## Аутентификация
+
+Человек работает через cookie-сессию, агент — через персональный токен доступа (PAT).
+
+```bash
+# Регистрация. Первый зарегистрировавшийся получает роль инстанса superadmin.
+curl -s -c tkl.jar -H 'X-Requested-With: XMLHttpRequest' -H 'Content-Type: application/json' \
+  -d '{"email":"ivan@example.com","password":"correct horse battery","full_name":"Иван"}' \
+  http://localhost:8000/api/v1/auth/register
+
+# Выпуск токена для агента. Полное значение показывается ровно один раз.
+curl -s -b tkl.jar -H 'X-Requested-With: XMLHttpRequest' -H 'Content-Type: application/json' \
+  -d '{"name":"claude-code","scope":"read"}' http://localhost:8000/api/v1/me/tokens
+
+# Запрос от имени агента
+curl -s -H "Authorization: Bearer tkl_…" http://localhost:8000/api/v1/me
+```
+
+`scope=read` даёт только чтение: любая мутация отвечает `403 insufficient_scope`. Мутирующий
+запрос с cookie-сессией обязан нести заголовок `X-Requested-With: XMLHttpRequest` — без него
+ответ `403 csrf_required`. Токены хранятся в базе только хешем, потерянный токен не
+восстанавливается — выпускается новый.
+
+Если доступ к единственному `superadmin` потерян, роль назначается с сервера:
+
+```bash
+uv run python -m app.admin grant --email ivan@example.com --role superadmin
+```
 
 ## Темы оформления
 

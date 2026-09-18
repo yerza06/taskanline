@@ -37,7 +37,9 @@ dev = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = ["backend/migrations/versions"]
+# docs/ — markdown с примерами кода: ruff форматирует такие блоки, а в плане
+# они специально написаны компактно, чтобы читались глазами.
+extend-exclude = ["backend/migrations/versions", "docs"]
 
 [tool.ruff.lint]
 select = [
