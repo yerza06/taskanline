@@ -1,12 +1,12 @@
 """Запросы к таблицам сессий и токенов агента."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.modules.auth.models import RefreshToken
+from app.modules.auth.models import ApiToken, RefreshToken
 
 
 class RefreshTokenRepository:
@@ -51,3 +51,29 @@ class RefreshTokenRepository:
             .values(revoked_at=at)
         )
         await self._session.flush()
+
+
+class ApiTokenRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def get_by_hash(self, token_hash: str) -> ApiToken | None:
+        token: ApiToken | None = await self._session.scalar(
+            select(ApiToken).where(ApiToken.token_hash == token_hash)
+        )
+        return token
+
+    async def touch_last_used(self, token_id: UUID, *, not_before: datetime) -> None:
+        """Отметка об использовании — не чаще раза в минуту.
+
+        Условие стоит в самом UPDATE, а не в Python: одновременные запросы агента
+        иначе устраивают гонку и пишут метку по нескольку раз подряд.
+        """
+        await self._session.execute(
+            update(ApiToken)
+            .where(
+                ApiToken.id == token_id,
+                or_(ApiToken.last_used_at.is_(None), ApiToken.last_used_at < not_before),
+            )
+            .values(last_used_at=datetime.now(UTC))
+        )

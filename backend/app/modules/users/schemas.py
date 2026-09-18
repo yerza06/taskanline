@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.core.enums import InstanceRole
+from app.core.enums import AuthMethod, InstanceRole
 
 
 def normalize_email(value: str) -> str:
@@ -52,3 +52,15 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
     _normalize = field_validator("email")(normalize_email)
+
+
+class MeResponse(UserRead):
+    """Профиль плюс то, чем именно доказана личность.
+
+    Клиенту важно знать свой scope: интерфейс агента по нему решает, показывать
+    ли кнопки изменения. Членства добавятся на этапе 2 — до появления workspace
+    их попросту нет.
+    """
+
+    auth_method: AuthMethod
+    scopes: list[str]
