@@ -19,6 +19,7 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 Environment = Literal["local", "ci", "production"]
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
+CookieSameSite = Literal["lax", "strict", "none"]
 
 # Список через запятую или JSON-массив — оба варианта встречаются в compose и CI.
 StringList = Annotated[list[str], NoDecode]
@@ -89,6 +90,31 @@ class SecuritySettings(BaseModel):
     )
 
 
+class AuthSettings(BaseModel):
+    """Сессии, cookie и защита от перебора. Переменные с префиксом `AUTH__`.
+
+    Отдельно от `SECURITY__`: там лежит секрет, которым всё подписывается, здесь —
+    политика, которую администратор инстанса правит, не трогая ключ.
+    """
+
+    access_ttl_minutes: int = Field(default=15, ge=1)
+    refresh_ttl_days: int = Field(default=30, ge=1)
+    # Secure не мешает локальной разработке: браузеры считают localhost доверенным
+    # источником и принимают такие cookie по http.
+    cookie_secure: bool = True
+    cookie_samesite: CookieSameSite = "lax"
+    # Пусто — cookie остаётся host-only. Домен нужен, только когда API и клиент
+    # живут на разных поддоменах одного домена.
+    cookie_domain: str = ""
+    access_cookie_name: str = "tkl_access"
+    refresh_cookie_name: str = "tkl_refresh"
+    # Лимиты на перебор. Окно скользящее, счёт ведётся по адресу клиента.
+    login_attempts: int = Field(default=10, ge=1)
+    login_window_seconds: int = Field(default=60, ge=1)
+    register_attempts: int = Field(default=5, ge=1)
+    register_window_seconds: int = Field(default=3600, ge=1)
+
+
 class AppSettings(BaseModel):
     """Поведение приложения наружу. Переменные с префиксом `APP__`."""
 
@@ -143,6 +169,7 @@ class Settings(BaseSettings):
 
     db: DatabaseSettings
     security: SecuritySettings
+    auth: AuthSettings = Field(default_factory=AuthSettings)
     app: AppSettings = Field(default_factory=AppSettings)
     cors: CorsSettings = Field(default_factory=CorsSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)

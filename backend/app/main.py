@@ -18,11 +18,14 @@ from pydantic import BaseModel
 from sqlalchemy import text
 
 from app import __version__
+from app.api import api_router
 from app.core.config import get_settings
+from app.core.csrf import CsrfMiddleware
 from app.core.database import get_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestIdMiddleware
+from app.core.rate_limit import InMemoryRateLimiter
 
 logger = structlog.get_logger(__name__)
 
@@ -58,6 +61,12 @@ def create_app() -> FastAPI:
         version=__version__,
         lifespan=lifespan,
     )
+    # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
+    # переезжать между экземплярами приложения.
+    app.state.rate_limiter = InMemoryRateLimiter()
+    app.add_middleware(CsrfMiddleware)
+    # RequestIdMiddleware добавляется последним и потому отрабатывает первым:
+    # отказ по CSRF должен попадать в лог с тем же request_id, что и запрос.
     app.add_middleware(RequestIdMiddleware)
     app.add_middleware(
         CORSMiddleware,
@@ -67,6 +76,7 @@ def create_app() -> FastAPI:
         allow_headers=settings.cors.allow_headers,
     )
     register_exception_handlers(app)
+    app.include_router(api_router)
 
     @app.get("/health", response_model=HealthResponse, tags=["service"])
     async def health() -> JSONResponse:

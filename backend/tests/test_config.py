@@ -16,7 +16,7 @@ DB_ENV = {
     "DB__NAME": "taskanline",
 }
 VALID_SECRET = "a" * 32
-GROUP_PREFIXES = ("DB__", "SECURITY__", "APP__", "LOG__", "CORS__", "SERVER__")
+GROUP_PREFIXES = ("DB__", "SECURITY__", "APP__", "LOG__", "CORS__", "SERVER__", "AUTH__")
 
 
 @pytest.fixture(autouse=True)
@@ -109,6 +109,33 @@ class TestCors:
         settings = build_valid(monkeypatch, CORS__ALLOW_CREDENTIALS="false")
 
         assert settings.cors.allow_credentials is False
+
+
+class TestAuth:
+    def test_defaults_match_architecture(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """15 минут и 30 дней записаны в архитектуре §3.3 — не произвольные числа."""
+        settings = build_valid(monkeypatch)
+
+        assert settings.auth.access_ttl_minutes == 15
+        assert settings.auth.refresh_ttl_days == 30
+        assert settings.auth.cookie_secure is True
+        assert settings.auth.cookie_samesite == "lax"
+
+    def test_samesite_rejects_unknown_value(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError):
+            build_valid(monkeypatch, AUTH__COOKIE_SAMESITE="sometimes")
+
+    def test_ttl_must_be_positive(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError):
+            build_valid(monkeypatch, AUTH__ACCESS_TTL_MINUTES="0")
+
+    def test_cookie_names_are_overridable(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(
+            monkeypatch, AUTH__ACCESS_COOKIE_NAME="a", AUTH__REFRESH_COOKIE_NAME="r"
+        )
+
+        assert settings.auth.access_cookie_name == "a"
+        assert settings.auth.refresh_cookie_name == "r"
 
 
 class TestEnvExample:

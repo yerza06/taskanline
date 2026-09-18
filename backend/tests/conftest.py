@@ -24,9 +24,12 @@ os.environ["DB__NAME"] = (
 )
 os.environ.setdefault("SECURITY__SECRET_KEY", "test-secret-key-at-least-32-characters-long")
 os.environ.setdefault("APP__ENVIRONMENT", "ci")
+# Тестовый клиент ходит по http, а Secure-cookie по нему не отправляется.
+# В продакшене флаг обязан быть включён — здесь он мешал бы проверять сессию.
+os.environ["AUTH__COOKIE_SECURE"] = "false"
 
 import asyncio  # noqa: E402
-from collections.abc import AsyncIterator, Iterator  # noqa: E402
+from collections.abc import AsyncIterator, Awaitable, Callable, Iterator  # noqa: E402
 from pathlib import Path  # noqa: E402
 
 import asyncpg  # noqa: E402
@@ -153,3 +156,42 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as async_client:
         yield async_client
+
+
+CSRF_HEADERS = {"X-Requested-With": "XMLHttpRequest"}
+
+
+@pytest.fixture
+async def session_client(client: AsyncClient) -> AsyncClient:
+    """Клиент с открытой cookie-сессией зарегистрированного пользователя.
+
+    Пользователь единственный, поэтому его роль инстанса — superadmin.
+    """
+    response = await client.post(
+        "/api/v1/auth/register",
+        json={
+            "email": "ivan@example.com",
+            "password": "correct horse battery",
+            "full_name": "Иван Иванов",
+        },
+        headers=CSRF_HEADERS,
+    )
+    assert response.status_code == 201, response.text
+    return client
+
+
+@pytest.fixture
+async def issue_token(session_client: AsyncClient) -> Callable[[str], Awaitable[str]]:
+    """Фабрика токенов агента: `await issue_token("read")` отдаёт полный токен."""
+
+    async def _issue(scope: str = "read_write", name: str = "agent") -> str:
+        response = await session_client.post(
+            "/api/v1/me/tokens",
+            json={"name": name, "scope": scope},
+            headers=CSRF_HEADERS,
+        )
+        assert response.status_code == 201, response.text
+        token: str = response.json()["token"]
+        return token
+
+    return _issue
