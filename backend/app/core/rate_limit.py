@@ -18,6 +18,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Protocol
 
+from fastapi import Request
+
+from app.core.errors import ApiError
+
 
 @dataclass(frozen=True)
 class RateLimitResult:
@@ -71,3 +75,34 @@ class InMemoryRateLimiter:
                 hits.popleft()
             if not hits:
                 del self._hits[key]
+
+
+def client_key(request: Request, prefix: str) -> str:
+    """Ключ окна: адрес клиента. Без него лимит был бы общим на весь инстанс."""
+    host = request.client.host if request.client is not None else "anonymous"
+    return f"{prefix}:{host}"
+
+
+def rate_limit(prefix: str, limit: Callable[[], tuple[int, int]]) -> Callable[[Request], None]:
+    """Зависимость FastAPI: лимит берётся из настроек в момент запроса.
+
+    Лимитер живёт в `app.state`, а не глобально: у каждого приложения он свой,
+    и тесты не отравляют друг другу окно.
+    """
+
+    def dependency(request: Request) -> None:
+        limiter: RateLimiter = request.app.state.rate_limiter
+        attempts, window_seconds = limit()
+        result = limiter.hit(
+            client_key(request, prefix), limit=attempts, window_seconds=window_seconds
+        )
+        if not result.allowed:
+            raise ApiError(
+                429,
+                "rate_limited",
+                "Слишком много попыток, попробуйте позже",
+                {"retry_after": result.retry_after},
+                {"Retry-After": str(result.retry_after)},
+            )
+
+    return dependency
