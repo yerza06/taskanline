@@ -1,4 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
+
+import { AuthLayout } from '@/features/auth/components/AuthLayout'
+import { RegisterForm } from '@/features/auth/components/RegisterForm'
 
 export const Route = createFileRoute('/register')({
   component: RegisterPage,
@@ -6,8 +9,19 @@ export const Route = createFileRoute('/register')({
 
 function RegisterPage() {
   return (
-    <div className="bg-canvas text-fg flex min-h-full items-center justify-center p-6">
-      <h1 className="text-xl font-medium">Регистрация</h1>
-    </div>
+    <AuthLayout
+      title="Регистрация"
+      description="Первый зарегистрированный становится администратором инстанса"
+      footer={
+        <>
+          Уже есть учётная запись?{' '}
+          <Link to="/login" className="text-accent underline underline-offset-4">
+            Войти
+          </Link>
+        </>
+      }
+    >
+      <RegisterForm />
+    </AuthLayout>
   )
 }
