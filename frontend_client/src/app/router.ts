@@ -1,7 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query'
 import { createRouter, type RouterHistory } from '@tanstack/react-router'
 
-import { routeTree } from '../routeTree.gen'
+import { routeTree } from '@/routeTree.gen'
 
 /**
  * Роутер с типизированным контекстом: маршруты получают `queryClient` и

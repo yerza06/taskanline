@@ -1,8 +1,8 @@
 import { HttpResponse, http } from 'msw'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { errorBody, ME } from '../../test/msw/handlers'
-import { server } from '../../test/msw/server'
+import { errorBody, ME } from '@/test/msw/handlers'
+import { server } from '@/test/msw/server'
 import { ApiError, apiFetch, markSessionActive } from './client'
 import { fieldErrors, humanMessage } from './messages'
 

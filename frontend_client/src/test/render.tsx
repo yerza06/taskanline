@@ -3,8 +3,8 @@ import { RouterProvider, createMemoryHistory } from '@tanstack/react-router'
 import { render, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
-import { Providers } from '../app/Providers'
-import { createAppRouter } from '../app/router'
+import { Providers } from '@/app/Providers'
+import { createAppRouter } from '@/app/router'
 
 /**
  * Поднимает приложение на памяти вместо адресной строки.

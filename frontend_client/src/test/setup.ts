@@ -50,6 +50,11 @@ afterAll(() => server.close())
 
 afterEach(() => {
   server.resetHandlers()
+  // Открытое меню Radix гасит указатель на <body> и прячет фон от скринридера.
+  // Если оно размонтировалось вместе со сменой маршрута, уборка не успевает —
+  // и в следующем тесте нельзя нажать уже ни на что.
+  document.body.style.pointerEvents = ''
+  document.body.removeAttribute('aria-hidden')
   vi.unstubAllGlobals()
   localStorage.clear()
   document.documentElement.classList.remove('dark')

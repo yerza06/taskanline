@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'node:url'
+
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -13,6 +15,11 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  resolve: {
+    // `@/shared/...` вместо `../../../shared/...`: относительный путь из
+    // глубины features читается хуже, чем не читается вовсе.
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   server: {
     port: 5173,
     // Бэкенд поднимается отдельно: uv run python -m app.main

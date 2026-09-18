@@ -1,6 +1,6 @@
 import { HttpResponse, http, type HttpHandler } from 'msw'
 
-import type { Me, TokenRead } from '../../shared/api/types'
+import type { Me, TokenRead } from '@/shared/api/types'
 
 export const ME: Me = {
   id: '019a5c1e-0000-7000-8000-000000000001',
