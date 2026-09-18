@@ -1,5 +1,7 @@
 import '@testing-library/jest-dom/vitest'
-import { afterEach, vi } from 'vitest'
+import { afterAll, afterEach, beforeAll, vi } from 'vitest'
+
+import { server } from './msw/server'
 
 /** jsdom не реализует matchMedia — без заглушки падает любой код, читающий системную тему. */
 export function mockPrefersColorScheme(prefersDark: boolean) {
@@ -41,7 +43,13 @@ export function mockPrefersColorScheme(prefersDark: boolean) {
 // Присваиванием, а не через stubGlobal: afterEach снимает все заглушки.
 window.scrollTo = vi.fn()
 
+// `error` на неперехваченном запросе: тихо ушедший в сеть запрос — это тест,
+// который проверяет не то, что написано в его названии.
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }))
+afterAll(() => server.close())
+
 afterEach(() => {
+  server.resetHandlers()
   vi.unstubAllGlobals()
   localStorage.clear()
   document.documentElement.classList.remove('dark')
