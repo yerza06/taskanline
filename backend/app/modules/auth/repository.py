@@ -1,11 +1,13 @@
 """Запросы к таблицам сессий и токенов агента."""
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
 from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.enums import TokenScope
 from app.modules.auth.models import ApiToken, RefreshToken
 
 
@@ -77,3 +79,48 @@ class ApiTokenRepository:
             )
             .values(last_used_at=datetime.now(UTC))
         )
+
+    async def list_active(self, user_id: UUID) -> Sequence[ApiToken]:
+        result = await self._session.scalars(
+            select(ApiToken)
+            .where(ApiToken.user_id == user_id, ApiToken.revoked_at.is_(None))
+            .order_by(ApiToken.created_at.desc())
+        )
+        return result.all()
+
+    async def get_owned(self, token_id: UUID, user_id: UUID) -> ApiToken | None:
+        """Владелец — часть условия выборки, а не отдельная проверка после неё."""
+        token: ApiToken | None = await self._session.scalar(
+            select(ApiToken).where(
+                ApiToken.id == token_id,
+                ApiToken.user_id == user_id,
+                ApiToken.revoked_at.is_(None),
+            )
+        )
+        return token
+
+    async def create(
+        self,
+        *,
+        user_id: UUID,
+        name: str,
+        token_hash: str,
+        prefix: str,
+        scope: TokenScope,
+        expires_at: datetime | None,
+    ) -> ApiToken:
+        token = ApiToken(
+            user_id=user_id,
+            name=name,
+            token_hash=token_hash,
+            prefix=prefix,
+            scope=scope,
+            expires_at=expires_at,
+        )
+        self._session.add(token)
+        await self._session.flush()
+        return token
+
+    async def revoke(self, token: ApiToken, *, at: datetime) -> None:
+        token.revoked_at = at
+        await self._session.flush()

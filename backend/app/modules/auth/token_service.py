@@ -4,13 +4,17 @@
 он живёт долго, ограничен scope и не ротируется.
 """
 
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.errors import ApiError
+from app.core.security import generate_pat, hash_token, token_prefix
 from app.modules.auth.models import ApiToken
 from app.modules.auth.repository import ApiTokenRepository
+from app.modules.auth.schemas import TokenCreate
 
 # Чаще раза в минуту отметку писать незачем: точность до секунды никому не нужна,
 # а запись на каждый запрос агента — заметная нагрузка на базу.
@@ -33,3 +37,30 @@ class ApiTokenService:
         await self._tokens.touch_last_used(token.id, not_before=now - LAST_USED_INTERVAL)
         await self._session.commit()
         return token
+
+    async def list_for(self, user_id: UUID) -> Sequence[ApiToken]:
+        return await self._tokens.list_active(user_id)
+
+    async def issue(self, user_id: UUID, data: TokenCreate) -> tuple[ApiToken, str]:
+        """Возвращает запись и полный токен. Показать его можно только сейчас."""
+        raw = generate_pat()
+        token = await self._tokens.create(
+            user_id=user_id,
+            name=data.name,
+            token_hash=hash_token(raw),
+            prefix=token_prefix(raw),
+            scope=data.scope,
+            expires_at=data.expires_at,
+        )
+        await self._session.commit()
+        return token, raw
+
+    async def revoke(self, token_id: UUID, user_id: UUID) -> None:
+        token = await self._tokens.get_owned(token_id, user_id)
+        # Чужой токен отвечает 404, а не 403: иначе перебором идентификаторов
+        # выясняется, какие токены существуют у других.
+        if token is None:
+            raise ApiError(404, "token_not_found", "Токен не найден")
+
+        await self._tokens.revoke(token, at=datetime.now(UTC))
+        await self._session.commit()

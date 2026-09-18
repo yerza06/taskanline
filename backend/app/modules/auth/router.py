@@ -4,16 +4,25 @@
 """
 
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_session
+from app.core.principal import CurrentPrincipal, WritePrincipal
 from app.core.rate_limit import rate_limit
 from app.modules.auth.cookies import clear_session_cookies, set_session_cookies
-from app.modules.auth.schemas import SessionResponse
+from app.modules.auth.schemas import (
+    SessionResponse,
+    TokenCreate,
+    TokenCreated,
+    TokenList,
+    TokenRead,
+)
 from app.modules.auth.service import AuthService
+from app.modules.auth.token_service import ApiTokenService
 from app.modules.users.schemas import LoginRequest, RegisterRequest, UserRead
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -104,3 +113,40 @@ async def logout(
     settings = get_settings()
     await service.logout(request.cookies.get(settings.auth.refresh_cookie_name))
     clear_session_cookies(response)
+
+
+# Путь начинается с /me, но таблица и правила живут в модуле auth — роутер тоже.
+tokens_router = APIRouter(prefix="/me/tokens", tags=["tokens"])
+
+
+def get_token_service(session: Annotated[AsyncSession, Depends(get_session)]) -> ApiTokenService:
+    return ApiTokenService(session)
+
+
+@tokens_router.get("", response_model=TokenList)
+async def list_tokens(
+    principal: CurrentPrincipal,
+    service: Annotated[ApiTokenService, Depends(get_token_service)],
+) -> TokenList:
+    tokens = await service.list_for(principal.user_id)
+    return TokenList(items=[TokenRead.model_validate(token) for token in tokens])
+
+
+@tokens_router.post("", response_model=TokenCreated, status_code=201)
+async def create_token(
+    payload: TokenCreate,
+    principal: WritePrincipal,
+    service: Annotated[ApiTokenService, Depends(get_token_service)],
+) -> TokenCreated:
+    """Полное значение токена показывается ровно здесь и больше нигде."""
+    token, raw = await service.issue(principal.user_id, payload)
+    return TokenCreated(**TokenRead.model_validate(token).model_dump(), token=raw)
+
+
+@tokens_router.delete("/{token_id}", status_code=204)
+async def revoke_token(
+    token_id: UUID,
+    principal: WritePrincipal,
+    service: Annotated[ApiTokenService, Depends(get_token_service)],
+) -> None:
+    await service.revoke(token_id, principal.user_id)
