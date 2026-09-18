@@ -51,7 +51,9 @@ uv run python -m app.main
 cd frontend_client && bun install && bun run dev
 ```
 
-Проверка: `curl localhost:8000/health` отдаёт `{"status":"ok","version":"0.1.0","database":"ok"}`.
+Проверка: `curl localhost:8000/health` отдаёт `{"status":"ok","version":"0.1.0","database":"ok"}`,
+а `http://localhost:5173/` открывает экран входа. Запросы клиента к `/api` dev-сервер проксирует
+на бэкенд, так что cookie сессии остаются в пределах одного origin.
 
 `--env-file .env` обязателен: без него compose не видит переменные из корневого `.env`,
 потому что project directory у него — каталог compose-файла. Если порт 5432 на хосте занят
@@ -81,6 +83,7 @@ API на `http://localhost:8000`.
 | Применить миграции | `make migrate` | `uv run alembic -c backend/alembic.ini upgrade head` |
 | Создать миграцию | `make migration name=users_auth rev=0001` | `… revision --autogenerate -m … --rev-id …` |
 | Откатить последнюю | `make migrate-down` | `… downgrade -1` |
+| Типы клиента из OpenAPI | `make api-types` | `uv run python -m app.openapi > frontend_client/openapi.json` + `bun run generate:api` |
 | Весь стек в контейнерах | `make stack-up` · `make stack-down` | — |
 
 `rev=` задаёт идентификатор ревизии: без него alembic подставит случайный хеш, а миграции
@@ -155,6 +158,30 @@ curl -s -H "Authorization: Bearer tkl_…" http://localhost:8000/api/v1/me
 
 ```bash
 uv run python -m app.admin grant --email ivan@example.com --role superadmin
+```
+
+То же самое доступно в браузере: `http://localhost:5173/` уводит на экран входа, оттуда —
+регистрация, а токены выпускаются и отзываются на странице «Токены доступа» в меню профиля.
+Полное значение токена показывается один раз, сразу после выпуска.
+
+## Веб-клиент
+
+React + TypeScript на Vite; маршрутизация TanStack Router (файловая, `src/routes/`), запросы —
+TanStack Query, формы — React Hook Form с Zod.
+
+**Типы API не пишутся руками.** `src/shared/api/schema.d.ts` генерируется из OpenAPI-схемы
+бэкенда командой `make api-types` и лежит в git; отдельная джоба CI пересобирает его и падает,
+если он разошёлся со схемой. После правки роутеров или Pydantic-схем бэкенда — перегенерировать.
+
+Весь HTTP идёт через `src/shared/api/client.ts`: cookie, обязательный заголовок
+`X-Requested-With`, разбор ошибок и обновление протухшей сессии собраны там. Свой `fetch` в
+обход него получит `403 csrf_required` на первой же мутации.
+
+```bash
+cd frontend_client
+bun run dev        # http://localhost:5173, /api проксируется на localhost:8000
+bun run test       # Vitest с MSW: сеть в тестах закрыта
+bun run lint && bun run typecheck && bun run build
 ```
 
 ## Темы оформления
