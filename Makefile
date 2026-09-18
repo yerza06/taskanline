@@ -9,7 +9,8 @@ FRONT := frontend_client
 
 .DEFAULT_GOAL := help
 .PHONY: help install env run db-up db-down db-logs stack-up stack-down \
-        test test-back test-front lint format migrate migration migrate-down history
+        test test-back test-front lint format api-types \
+        migrate migration migrate-down history
 
 help: ## Показать список команд
 	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -66,6 +67,10 @@ lint: ## Линтеры и проверка типов на обеих поло�
 format: ## Отформатировать и починить автоисправимое
 	uv run ruff check --fix .
 	uv run ruff format .
+
+api-types: ## Пересобрать типы веб-клиента из OpenAPI бэкенда
+	uv run python -m app.openapi > $(FRONT)/openapi.json
+	cd $(FRONT) && bun run generate:api
 
 # --- Миграции ----------------------------------------------------------------
 

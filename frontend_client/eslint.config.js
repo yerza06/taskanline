@@ -5,7 +5,9 @@ import globals from 'globals'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules'] },
+  // schema.d.ts генерируется из OpenAPI: править его руками нельзя,
+  // а значит и замечания линтера по нему некому исполнять.
+  { ignores: ['dist', 'coverage', 'node_modules', 'src/shared/api/schema.d.ts'] },
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, ...tseslint.configs.recommendedTypeChecked],
