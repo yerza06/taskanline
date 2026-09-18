@@ -1,24 +1,19 @@
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { mockPrefersColorScheme } from '../test/setup'
-import { App } from './App'
+import { renderApp } from '../test/render'
 
 describe('App', () => {
-  it('рендерит оболочку приложения с шапкой, навигацией и областью контента', () => {
-    render(<App />)
+  it('с корня уводит на экран входа', async () => {
+    const { router } = await renderApp({ path: '/' })
 
-    expect(screen.getByRole('banner')).toHaveTextContent('TasKanLine')
-    expect(screen.getByRole('navigation')).toBeInTheDocument()
-    expect(screen.getByRole('main')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/login')
+    expect(await screen.findByRole('heading', { name: 'Вход' })).toBeInTheDocument()
   })
 
-  it('даёт переключатель темы и уважает системную тёмную', () => {
-    mockPrefersColorScheme(true)
+  it('на неизвестном маршруте показывает страницу «не найдено»', async () => {
+    await renderApp({ path: '/nowhere' })
 
-    render(<App />)
-
-    expect(screen.getByRole('button', { name: /тема/i })).toBeInTheDocument()
-    expect(document.documentElement.classList.contains('dark')).toBe(true)
+    expect(await screen.findByText(/страница не найдена/i)).toBeInTheDocument()
   })
 })

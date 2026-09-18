@@ -36,6 +36,11 @@ export function mockPrefersColorScheme(prefersDark: boolean) {
   }
 }
 
+// jsdom не умеет прокручивать окно, а роутер восстанавливает позицию на каждой
+// навигации — без заглушки вывод тестов тонет в «Not implemented».
+// Присваиванием, а не через stubGlobal: afterEach снимает все заглушки.
+window.scrollTo = vi.fn()
+
 afterEach(() => {
   vi.unstubAllGlobals()
   localStorage.clear()
