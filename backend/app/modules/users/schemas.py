@@ -5,7 +5,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 
-from app.core.enums import AuthMethod, InstanceRole
+from app.core.enums import AuthMethod, InstanceRole, ProjectRole, TeamRole, WorkspaceRole
 
 
 def normalize_email(value: str) -> str:
@@ -54,13 +54,38 @@ class LoginRequest(BaseModel):
     _normalize = field_validator("email")(normalize_email)
 
 
+class WorkspaceMembership(BaseModel):
+    workspace_id: UUID
+    role: WorkspaceRole
+
+
+class TeamMembership(BaseModel):
+    team_id: UUID
+    workspace_id: UUID
+    role: TeamRole
+
+
+class ProjectMembership(BaseModel):
+    project_id: UUID
+    workspace_id: UUID
+    role: ProjectRole
+
+
+class Memberships(BaseModel):
+    """Где человек числится — плоско, одними идентификаторами (§3.6)."""
+
+    workspaces: list[WorkspaceMembership]
+    teams: list[TeamMembership]
+    projects: list[ProjectMembership]
+
+
 class MeResponse(UserRead):
     """Профиль плюс то, чем именно доказана личность.
 
     Клиенту важно знать свой scope: интерфейс агента по нему решает, показывать
-    ли кнопки изменения. Членства добавятся на этапе 2 — до появления workspace
-    их попросту нет.
+    ли кнопки изменения.
     """
 
     auth_method: AuthMethod
     scopes: list[str]
+    memberships: Memberships

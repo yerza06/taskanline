@@ -1,6 +1,11 @@
 """Профиль текущего пользователя."""
 
+from collections.abc import Awaitable, Callable
+
 from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from tests.org import create_project, create_team, create_workspace, grant, user_id_of
 
 CSRF = {"X-Requested-With": "XMLHttpRequest"}
 
@@ -56,3 +61,32 @@ class TestUpdateProfile:
         response = await client.patch("/api/v1/me", json={"full_name": "Кто-то"}, headers=CSRF)
 
         assert response.status_code == 401
+
+
+async def test_me_lists_memberships(
+    sign_up: Callable[..., Awaitable[AsyncClient]], db_session: AsyncSession
+) -> None:
+    """По членствам подрядчик находит свой проект: команду ему не видно."""
+    owner = await sign_up("owner@example.com")
+    workspace = await create_workspace(owner)
+    team = await create_team(owner, workspace["id"])
+    project = await create_project(owner, team["id"])
+    anna = await sign_up("anna@example.com")
+    await grant(
+        db_session,
+        user_id=await user_id_of(db_session, "anna@example.com"),
+        workspace_id=workspace["id"],
+        workspace_role="guest",
+        project_id=project["id"],
+        project_role="member",
+    )
+
+    memberships = (await anna.get("/api/v1/me")).json()["memberships"]
+
+    assert memberships == {
+        "workspaces": [{"workspace_id": workspace["id"], "role": "guest"}],
+        "teams": [],
+        "projects": [
+            {"project_id": project["id"], "workspace_id": workspace["id"], "role": "member"}
+        ],
+    }
