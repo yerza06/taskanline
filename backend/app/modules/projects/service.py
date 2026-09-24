@@ -97,6 +97,11 @@ class ProjectService:
         return project
 
     async def delete(self, ctx: AccessContext) -> None:
+        # Импорт внутри: invitations стоит поверх projects, и обратная связь на
+        # уровне модуля замкнула бы импорт в кольцо.
+        from app.modules.invitations.service import InvitationService
+
+        await InvitationService(self._session).revoke_for_project(ctx.workspace_id, ctx.project)
         await self._projects.delete(ctx.project, ctx.workspace_id)
         await self._session.commit()
 

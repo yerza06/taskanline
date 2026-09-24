@@ -1,5 +1,6 @@
 """Помощники тестов организационной структуры."""
 
+import re
 from typing import Any
 from uuid import UUID
 
@@ -61,6 +62,13 @@ class RecordingMailer:
 
     async def send(self, message: MailMessage) -> None:
         self.sent.append(message)
+
+
+def invite_token(mailer: RecordingMailer) -> str:
+    """Токен из последнего письма: API его не возвращает нигде, как и в жизни."""
+    match = re.search(r"/invite/([0-9A-Za-z]+)", mailer.sent[-1].body)
+    assert match is not None, mailer.sent[-1].body
+    return match.group(1)
 
 
 async def user_id_of(session: AsyncSession, email: str) -> UUID:

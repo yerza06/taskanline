@@ -102,6 +102,12 @@ class TeamService:
         return team
 
     async def delete(self, ctx: AccessContext) -> None:
+        # Импорт внутри: invitations стоит поверх teams, и обратная связь на уровне
+        # модуля замкнула бы импорт в кольцо.
+        from app.modules.invitations.service import InvitationService
+
+        # Проекты команды ещё на месте: отзыв находит приглашения и в них.
+        await InvitationService(self._session).revoke_for_team(ctx.workspace_id, ctx.team)
         await self._teams.delete(ctx.team, ctx.workspace_id)
         await self._session.commit()
 
