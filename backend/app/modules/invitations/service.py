@@ -12,17 +12,30 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
-from app.core.enums import InvitationScope, InvitationStatus
+from app.core.enums import (
+    InvitationScope,
+    InvitationStatus,
+    ProjectRole,
+    TeamRole,
+    WorkspaceRole,
+)
 from app.core.errors import ApiError
 from app.core.mail import MailMessage
 from app.core.permissions import AccessContext, AccessTarget, Permission, resolve_access
-from app.core.principal import Principal
+from app.core.principal import WRITE, Principal
 from app.core.security import generate_invitation_token, hash_token
+from app.modules.auth.service import AuthService, SessionTokens
 from app.modules.invitations.models import Invitation
 from app.modules.invitations.repository import InvitationRepository
-from app.modules.invitations.schemas import InvitationCreate
+from app.modules.invitations.schemas import (
+    InvitationAccept,
+    InvitationCreate,
+    InvitationPreview,
+)
 from app.modules.projects.service import ProjectService
 from app.modules.teams.service import TeamService
+from app.modules.users.models import User
+from app.modules.users.schemas import RegisterRequest
 from app.modules.users.service import UserService
 from app.modules.workspaces.service import WorkspaceService
 
@@ -139,6 +152,147 @@ class InvitationService:
 
     async def revoke_for_project(self, workspace_id: UUID, project_id: UUID) -> None:
         await self._invitations.revoke_for_project(workspace_id, project_id)
+
+    async def preview(self, raw_token: str) -> InvitationPreview:
+        invitation = await self._invitations.get_by_hash(hash_token(raw_token))
+        if invitation is None:
+            raise _not_found()
+        await self._expire_if_due(invitation)
+
+        workspace = await self._workspaces.find(invitation.workspace_id)
+        inviter = await self._users.find(invitation.invited_by)
+        if workspace is None or inviter is None:
+            raise _not_found()
+        return InvitationPreview(
+            workspace_name=workspace.name,
+            inviter_name=inviter.full_name,
+            email=invitation.email,
+            scope_type=invitation.scope_type,
+            role=invitation.role,
+            status=invitation.status,
+            expires_at=invitation.expires_at,
+        )
+
+    async def accept(
+        self,
+        raw_token: str,
+        principal: Principal | None,
+        data: InvitationAccept | None,
+        *,
+        user_agent: str | None,
+        ip: str | None,
+    ) -> tuple[Invitation, SessionTokens | None]:
+        """Принять может только владелец адреса.
+
+        Вошедший — если его email совпадает с приглашением; аноним — заведя
+        учётную запись на этот адрес. Всё — одной транзакцией.
+        """
+        invitation = await self._invitations.get_by_hash(hash_token(raw_token), lock=True)
+        if invitation is None:
+            raise _not_found()
+        await self._expire_if_due(invitation)
+        if invitation.status != InvitationStatus.PENDING:
+            raise _not_pending(invitation)
+        if not await self._scope_exists(invitation):
+            raise _not_found()
+
+        tokens: SessionTokens | None = None
+        if principal is not None:
+            user = await self._signed_in_user(principal, invitation)
+        else:
+            user, tokens = await self._register(invitation, data, user_agent=user_agent, ip=ip)
+
+        await self._grant(invitation, user.id)
+        invitation.status = InvitationStatus.ACCEPTED
+        invitation.accepted_at = datetime.now(UTC)
+        invitation.accepted_by = user.id
+        await self._session.commit()
+        return invitation, tokens
+
+    async def _expire_if_due(self, invitation: Invitation) -> None:
+        """Истечение помечается при обращении: фоновой чистки до этапа 9 нет."""
+        if invitation.status == InvitationStatus.PENDING and invitation.expires_at <= datetime.now(
+            UTC
+        ):
+            invitation.status = InvitationStatus.EXPIRED
+            await self._session.commit()
+
+    async def _scope_exists(self, invitation: Invitation) -> bool:
+        match invitation.scope_type:
+            case InvitationScope.TEAM:
+                team = await self._teams.get_in_workspace(
+                    invitation.scope_id, invitation.workspace_id
+                )
+                return team is not None
+            case InvitationScope.PROJECT:
+                project = await self._projects.get_in_workspace(
+                    invitation.scope_id, invitation.workspace_id
+                )
+                return project is not None
+            case _:
+                # workspace держится внешним ключом: пропадёт он — пропадёт и приглашение.
+                return True
+
+    async def _signed_in_user(self, principal: Principal, invitation: Invitation) -> User:
+        if WRITE not in principal.scopes:
+            raise ApiError(403, "insufficient_scope", "Токен выдан только на чтение")
+        user = await self._users.get_active(principal.user_id)
+        # Пересланное письмо не должно давать доступ постороннему.
+        if user.email.lower() != invitation.email.lower():
+            raise ApiError(
+                403,
+                "invitation_email_mismatch",
+                "Приглашение отправлено на другой адрес",
+                {"email": invitation.email},
+            )
+        return user
+
+    async def _register(
+        self,
+        invitation: Invitation,
+        data: InvitationAccept | None,
+        *,
+        user_agent: str | None,
+        ip: str | None,
+    ) -> tuple[User, SessionTokens]:
+        if data is None:
+            raise ApiError(
+                400,
+                "registration_required",
+                "Чтобы принять приглашение, войдите или укажите имя и пароль",
+            )
+        if await self._users.find_by_email(invitation.email) is not None:
+            raise ApiError(
+                409,
+                "login_required",
+                "Учётная запись с этим адресом уже есть — войдите, чтобы принять приглашение",
+            )
+        # Адрес берётся из приглашения, а не из тела: регистрируется ровно тот, кого звали.
+        return await AuthService(self._session).create_account(
+            RegisterRequest(
+                email=invitation.email, password=data.password, full_name=data.full_name
+            ),
+            user_agent=user_agent,
+            ip=ip,
+        )
+
+    async def _grant(self, invitation: Invitation, user_id: UUID) -> None:
+        workspace_id = invitation.workspace_id
+        if invitation.scope_type == InvitationScope.WORKSPACE:
+            await self._workspaces.grant(workspace_id, user_id, WorkspaceRole(invitation.role))
+            return
+
+        # Приглашение глубже workspace даёт гостевое членство в нём: без него
+        # доступ к проекту висел бы в воздухе (и не прошёл бы составной FK).
+        await self._workspaces.grant(workspace_id, user_id, WorkspaceRole.GUEST)
+        if invitation.scope_type == InvitationScope.TEAM:
+            await self._teams.grant(
+                workspace_id, invitation.scope_id, user_id, TeamRole(invitation.role)
+            )
+        else:
+            await self._projects.grant(
+                workspace_id, invitation.scope_id, user_id, ProjectRole(invitation.role)
+            )
 
     async def _access(
         self, principal: Principal, scope_type: InvitationScope, scope_id: UUID

@@ -46,6 +46,18 @@ class AuthService:
     async def register(
         self, data: RegisterRequest, *, user_agent: str | None, ip: str | None
     ) -> tuple[User, SessionTokens]:
+        user, tokens = await self.create_account(data, user_agent=user_agent, ip=ip)
+        await self._session.commit()
+        return user, tokens
+
+    async def create_account(
+        self, data: RegisterRequest, *, user_agent: str | None, ip: str | None
+    ) -> tuple[User, SessionTokens]:
+        """Регистрация без фиксации: вызывающий дописывает своё и коммитит одной транзакцией.
+
+        Так принятие приглашения не оставит учётную запись без членства, если
+        выдача членства сорвётся.
+        """
         await self._users.lock_bootstrap()
         # Первому зарегистрировавшемуся нужна роль superadmin: иначе развёрнутым
         # инстансом некому управлять.
@@ -65,7 +77,6 @@ class AuthService:
             ) from error
 
         tokens = await self._issue_session(user, user_agent=user_agent, ip=ip)
-        await self._session.commit()
         return user, tokens
 
     async def login(
