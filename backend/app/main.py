@@ -24,6 +24,7 @@ from app.core.csrf import CsrfMiddleware
 from app.core.database import get_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
+from app.core.mail import build_mailer
 from app.core.middleware import RequestIdMiddleware
 from app.core.rate_limit import InMemoryRateLimiter
 
@@ -64,6 +65,8 @@ def create_app() -> FastAPI:
     # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
+    # Почтальон, как и лимитер, принадлежит приложению: тесты подменяют его своим.
+    app.state.mailer = build_mailer(settings.mail)
     app.add_middleware(CsrfMiddleware)
     # RequestIdMiddleware добавляется последним и потому отрабатывает первым:
     # отказ по CSRF должен попадать в лог с тем же request_id, что и запрос.

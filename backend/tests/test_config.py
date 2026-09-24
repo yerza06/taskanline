@@ -16,7 +16,17 @@ DB_ENV = {
     "DB__NAME": "taskanline",
 }
 VALID_SECRET = "a" * 32
-GROUP_PREFIXES = ("DB__", "SECURITY__", "APP__", "LOG__", "CORS__", "SERVER__", "AUTH__")
+GROUP_PREFIXES = (
+    "DB__",
+    "SECURITY__",
+    "APP__",
+    "LOG__",
+    "CORS__",
+    "SERVER__",
+    "AUTH__",
+    "MAIL__",
+    "INVITE__",
+)
 
 
 @pytest.fixture(autouse=True)
@@ -200,3 +210,33 @@ class TestOtherGroups:
     def test_short_secret_key_is_rejected(self, monkeypatch: pytest.MonkeyPatch) -> None:
         with pytest.raises(ValidationError):
             build_valid(monkeypatch, SECURITY__SECRET_KEY="короткий")
+
+
+class TestMail:
+    def test_defaults_to_console(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Без настроенного SMTP письмо уходит в лог, а не в никуда."""
+        settings = build_valid(monkeypatch)
+
+        assert settings.mail.backend == "console"
+
+    def test_smtp_is_configured_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        settings = build_valid(
+            monkeypatch,
+            MAIL__BACKEND="smtp",
+            MAIL__HOST="smtp.example.com",
+            MAIL__PASSWORD="secret",
+            MAIL__SECURITY="tls",
+        )
+
+        assert settings.mail.host == "smtp.example.com"
+        assert settings.mail.password.get_secret_value() == "secret"
+        assert settings.mail.security == "tls"
+
+
+class TestInvite:
+    def test_ttl_defaults_to_seven_days(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        assert build_valid(monkeypatch).invite.ttl_days == 7
+
+    def test_ttl_must_be_positive(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        with pytest.raises(ValidationError):
+            build_valid(monkeypatch, INVITE__TTL_DAYS="0")

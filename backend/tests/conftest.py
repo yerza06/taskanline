@@ -44,6 +44,7 @@ from sqlalchemy.pool import NullPool  # noqa: E402
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import get_engine, get_session  # noqa: E402
 from app.main import create_app  # noqa: E402
+from tests.org import RecordingMailer  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
@@ -140,8 +141,14 @@ async def close_engine_connections() -> AsyncIterator[None]:
 
 
 @pytest.fixture
-def app(db_session: AsyncSession) -> Iterator[FastAPI]:
+def mailer() -> RecordingMailer:
+    return RecordingMailer()
+
+
+@pytest.fixture
+def app(db_session: AsyncSession, mailer: RecordingMailer) -> Iterator[FastAPI]:
     application = create_app()
+    application.state.mailer = mailer
 
     async def _override_get_session() -> AsyncIterator[AsyncSession]:
         yield db_session
@@ -159,6 +166,42 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 
 CSRF_HEADERS = {"X-Requested-With": "XMLHttpRequest"}
+
+
+@pytest.fixture
+async def new_client(app: FastAPI) -> AsyncIterator[Callable[[], AsyncClient]]:
+    """Фабрика клиентов: у каждого свои cookie и свой адрес.
+
+    Свой адрес — ради лимитов: окно регистрации считается по IP, и пятый
+    пользователь в одном тесте иначе получил бы 429.
+    """
+    clients: list[AsyncClient] = []
+
+    def _new() -> AsyncClient:
+        transport = ASGITransport(app=app, client=(f"10.0.0.{len(clients) + 1}", 50000))
+        client = AsyncClient(transport=transport, base_url="http://test", headers=CSRF_HEADERS)
+        clients.append(client)
+        return client
+
+    yield _new
+    for client in clients:
+        await client.aclose()
+
+
+@pytest.fixture
+def sign_up(new_client: Callable[[], AsyncClient]) -> Callable[..., Awaitable[AsyncClient]]:
+    """Зарегистрированный пользователь со своей cookie-сессией."""
+
+    async def _sign_up(email: str, full_name: str = "Участник") -> AsyncClient:
+        client = new_client()
+        response = await client.post(
+            "/api/v1/auth/register",
+            json={"email": email, "password": "correct horse battery", "full_name": full_name},
+        )
+        assert response.status_code == 201, response.text
+        return client
+
+    return _sign_up
 
 
 @pytest.fixture

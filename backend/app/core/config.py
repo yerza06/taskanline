@@ -20,6 +20,8 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 Environment = Literal["local", "ci", "production"]
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 CookieSameSite = Literal["lax", "strict", "none"]
+MailBackend = Literal["console", "smtp"]
+MailSecurity = Literal["none", "starttls", "tls"]
 
 # Список через запятую или JSON-массив — оба варианта встречаются в compose и CI.
 StringList = Annotated[list[str], NoDecode]
@@ -158,6 +160,34 @@ class LogSettings(BaseModel):
     level: LogLevel = "INFO"
 
 
+class MailSettings(BaseModel):
+    """Исходящая почта. Переменные с префиксом `MAIL__`.
+
+    `console` пишет письмо в лог вместо отправки: на машине разработчика SMTP нет,
+    а ссылку из приглашения всё равно нужно где-то увидеть.
+    """
+
+    backend: MailBackend = "console"
+    host: str = "localhost"
+    port: int = Field(default=587, ge=1, le=65535)
+    username: str = ""
+    password: SecretStr = SecretStr("")
+    # starttls — порт 587, tls — порт 465, none — только для локального релея.
+    security: MailSecurity = "starttls"
+    from_address: str = "TasKanLine <noreply@localhost>"
+    timeout_seconds: int = Field(default=10, ge=1)
+
+
+class InvitationSettings(BaseModel):
+    """Приглашения. Переменные с префиксом `INVITE__`."""
+
+    ttl_days: int = Field(default=7, ge=1)
+    # Лимит на POST /invitations с одного адреса: приглашение — это письмо на чужой
+    # ящик, и без лимита инстанс превращается в рассыльщик спама.
+    attempts: int = Field(default=30, ge=1)
+    window_seconds: int = Field(default=3600, ge=1)
+
+
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=".env",
@@ -174,6 +204,8 @@ class Settings(BaseSettings):
     cors: CorsSettings = Field(default_factory=CorsSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     log: LogSettings = Field(default_factory=LogSettings)
+    mail: MailSettings = Field(default_factory=MailSettings)
+    invite: InvitationSettings = Field(default_factory=InvitationSettings)
 
 
 @lru_cache
