@@ -21,6 +21,14 @@ class TestSchema:
         assert "/api/v1/me/tokens" in paths
         assert "/api/v1/me/tokens/{token_id}" in paths
 
+    def test_covers_stage_two_paths(self) -> None:
+        paths = json.loads(dump())["paths"]
+
+        assert "/api/v1/workspaces/{workspace_id}/teams" in paths
+        assert "/api/v1/teams/{team_id}/projects" in paths
+        assert "/api/v1/projects/{project_id}/archive" in paths
+        assert "/api/v1/invitations/token/{token}/accept" in paths
+
     def test_describes_response_schemas(self) -> None:
         """Без схем ответов генератор отдаст `unknown` вместо типов."""
         schemas = json.loads(dump())["components"]["schemas"]
