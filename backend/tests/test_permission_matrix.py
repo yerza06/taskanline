@@ -9,6 +9,7 @@
 гость workspace плюс явное членство, так проверяется именно этот уровень.
 """
 
+import json
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from typing import Any
@@ -18,6 +19,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions import AccessTarget, EffectiveRole
+from app.openapi import dump
 from tests.org import API, create_project, create_team, create_workspace, grant, user_id_of
 
 SignUp = Callable[..., Awaitable[AsyncClient]]
@@ -212,9 +214,13 @@ async def test_permission_matrix(case: Case, sign_up: SignUp, db_session: AsyncS
 
 
 def test_matrix_covers_every_org_route() -> None:
-    """Новый маршрут без строки в матрице — непроверенные права."""
-    from app.main import create_app
+    """Новый маршрут без строки в матрице — непроверенные права.
 
+    Маршруты берутся из OpenAPI-схемы, а не из `create_app().routes`: на текущей
+    FastAPI в `app.routes` лежат обёртки `_IncludedRouter` с `path=None`, и обход
+    объектов маршрутов вернул бы пустое множество — проверка стала бы вечно
+    зелёной вне зависимости от того, что в неё передали.
+    """
     covered = {(case.method, case.path.split("?")[0]) for case in CASES}
     public = {("GET", "/invitations/token/{token}"), ("POST", "/invitations/token/{token}/accept")}
     # Проверяются отдельно: список своих и создание не привязаны к объекту,
@@ -225,12 +231,20 @@ def test_matrix_covers_every_org_route() -> None:
         ("DELETE", "/invitations/{invitation_id}"),
     }
     prefixes = ("/workspaces", "/teams", "/projects", "/invitations")
+    http_methods = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 
+    paths = json.loads(dump())["paths"]
     routes = {
-        (method, getattr(route, "path", "").removeprefix(API))
-        for route in create_app().routes
-        if getattr(route, "path", "").removeprefix(API).startswith(prefixes)
-        for method in getattr(route, "methods", set())
+        (method.upper(), path.removeprefix(API))
+        for path, operations in paths.items()
+        if path.removeprefix(API).startswith(prefixes)
+        for method in operations
+        if method in http_methods
     }
+
+    # Страховка от повторного «вечно зелёного» теста: множество не пустое и
+    # содержит заведомо существующий маршрут.
+    assert routes
+    assert ("GET", "/workspaces/{workspace_id}") in routes
 
     assert routes - covered - public - special == set()
