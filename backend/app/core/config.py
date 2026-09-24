@@ -161,7 +161,13 @@ class LogSettings(BaseModel):
 
 
 class MailSettings(BaseModel):
-    """Исходящая почта. Переменные с префиксом `MAIL__`.
+    """Исходящая почта. Переменные с префиксом `MAILER__`.
+
+    Не `MAIL__`: эта переменная уже занята системой (`pam_mail`/Debian выставляют
+    `MAIL=/var/spool/mail/<user>` при входе в shell), и `pydantic-settings` для
+    вложенной модели отдаёт точному совпадению имени переменной приоритет перед
+    разбором `__`-делимитера — `uv run pytest` в обычном терминале падал бы ещё
+    до чтения `.env`.
 
     `console` пишет письмо в лог вместо отправки: на машине разработчика SMTP нет,
     а ссылку из приглашения всё равно нужно где-то увидеть.
@@ -204,7 +210,7 @@ class Settings(BaseSettings):
     cors: CorsSettings = Field(default_factory=CorsSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     log: LogSettings = Field(default_factory=LogSettings)
-    mail: MailSettings = Field(default_factory=MailSettings)
+    mailer: MailSettings = Field(default_factory=MailSettings)
     invite: InvitationSettings = Field(default_factory=InvitationSettings)
 
 

@@ -24,7 +24,7 @@ GROUP_PREFIXES = (
     "CORS__",
     "SERVER__",
     "AUTH__",
-    "MAIL__",
+    "MAILER__",
     "INVITE__",
 )
 
@@ -217,20 +217,20 @@ class TestMail:
         """Без настроенного SMTP письмо уходит в лог, а не в никуда."""
         settings = build_valid(monkeypatch)
 
-        assert settings.mail.backend == "console"
+        assert settings.mailer.backend == "console"
 
     def test_smtp_is_configured_from_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
         settings = build_valid(
             monkeypatch,
-            MAIL__BACKEND="smtp",
-            MAIL__HOST="smtp.example.com",
-            MAIL__PASSWORD="secret",
-            MAIL__SECURITY="tls",
+            MAILER__BACKEND="smtp",
+            MAILER__HOST="smtp.example.com",
+            MAILER__PASSWORD="secret",
+            MAILER__SECURITY="tls",
         )
 
-        assert settings.mail.host == "smtp.example.com"
-        assert settings.mail.password.get_secret_value() == "secret"
-        assert settings.mail.security == "tls"
+        assert settings.mailer.host == "smtp.example.com"
+        assert settings.mailer.password.get_secret_value() == "secret"
+        assert settings.mailer.security == "tls"
 
 
 class TestInvite:

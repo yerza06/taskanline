@@ -66,7 +66,7 @@ def create_app() -> FastAPI:
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
     # Почтальон, как и лимитер, принадлежит приложению: тесты подменяют его своим.
-    app.state.mailer = build_mailer(settings.mail)
+    app.state.mailer = build_mailer(settings.mailer)
     app.add_middleware(CsrfMiddleware)
     # RequestIdMiddleware добавляется последним и потому отрабатывает первым:
     # отказ по CSRF должен попадать в лог с тем же request_id, что и запрос.
