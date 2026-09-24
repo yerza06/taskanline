@@ -27,6 +27,23 @@ async def create_workspace(
     return body
 
 
+async def create_team(
+    client: AsyncClient,
+    workspace_id: str,
+    *,
+    key: str = "ENG",
+    name: str = "Engineering",
+    is_private: bool = False,
+) -> dict[str, Any]:
+    response = await client.post(
+        f"{API}/workspaces/{workspace_id}/teams",
+        json={"key": key, "name": name, "is_private": is_private},
+    )
+    assert response.status_code == 201, response.text
+    body: dict[str, Any] = response.json()
+    return body
+
+
 class RecordingMailer:
     """Почтальон тестов: складывает письма в список вместо отправки."""
 
