@@ -1,7 +1,9 @@
 """Помощники тестов организационной структуры."""
 
+from typing import Any
 from uuid import UUID
 
+from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,8 +13,18 @@ from app.modules.teams.models import TeamMember
 from app.modules.users.models import User
 from app.modules.workspaces.models import WorkspaceMember
 
+API = "/api/v1"
 CSRF = {"X-Requested-With": "XMLHttpRequest"}
 PASSWORD = "correct horse battery"
+
+
+async def create_workspace(
+    client: AsyncClient, *, slug: str = "acme", name: str = "Acme"
+) -> dict[str, Any]:
+    response = await client.post(f"{API}/workspaces", json={"name": name, "slug": slug})
+    assert response.status_code == 201, response.text
+    body: dict[str, Any] = response.json()
+    return body
 
 
 class RecordingMailer:
