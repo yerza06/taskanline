@@ -103,7 +103,7 @@ def upgrade() -> None:
         "teams",
         sa.Column("id", sa.UUID(), nullable=False),
         sa.Column("workspace_id", sa.UUID(), nullable=False),
-        sa.Column("key", sa.String(length=32), nullable=False),
+        sa.Column("key", sa.String(length=5), nullable=False),
         sa.Column("name", sa.Text(), nullable=False),
         sa.Column("description", sa.Text(), nullable=True),
         sa.Column("is_private", sa.Boolean(), server_default=sa.text("false"), nullable=False),

@@ -5,7 +5,7 @@ from uuid import UUID
 
 import pytest
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.invitations.models import Invitation
@@ -81,7 +81,10 @@ class TestTeam:
         workspace = await make_workspace(db_session, owner)
         db_session.add(Team(workspace_id=workspace.id, key=key, name="Плохой"))
 
-        with pytest.raises(IntegrityError):
+        # DBAPIError — родитель IntegrityError: колонка VARCHAR(5) по спеке, и для
+        # "ENGINE" (6 символов) PostgreSQL валит вставку усечением строки раньше
+        # проверки CHECK, а не самим нарушением ограничения.
+        with pytest.raises(DBAPIError):
             await db_session.flush()
 
 

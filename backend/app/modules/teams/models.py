@@ -35,10 +35,7 @@ class Team(Base):
     workspace_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("workspaces.id", ondelete="CASCADE"), nullable=False
     )
-    # Ширина колонки больше допустимой длины ключа нарочно: формат проверяет CHECK
-    # `key_format`, а не длина VARCHAR — иначе слишком длинное значение падает с
-    # ошибкой усечения строки раньше, чем с ожидаемым нарушением ограничения.
-    key: Mapped[str] = mapped_column(String(32), nullable=False)
+    key: Mapped[str] = mapped_column(String(5), nullable=False)
     name: Mapped[str] = mapped_column(Text, nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
     # Приватную команду рядовой участник workspace не видит вовсе.
