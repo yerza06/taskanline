@@ -79,6 +79,32 @@ jobs:
       - run: bun run test
       - run: bun run build
 
+  api-types:
+    name: Типы клиента из OpenAPI
+    runs-on: ubuntu-latest
+    env:
+      # Настройки нужны, чтобы собрать приложение и снять с него схему;
+      # к базе выгрузка не ходит.
+      DB__USER: taskanline
+      DB__PASSWORD: taskanline
+      DB__NAME: taskanline
+      SECURITY__SECRET_KEY: ci-secret-key-at-least-32-characters-long
+      APP__ENVIRONMENT: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: uv sync --frozen
+      - run: cd frontend_client && bun install --frozen-lockfile
+      - run: make api-types
+      - name: Схема и типы разошлись
+        run: git diff --exit-code frontend_client/src/shared/api/schema.d.ts
+
   docker-build:
     name: Сборка образов
     runs-on: ubuntu-latest

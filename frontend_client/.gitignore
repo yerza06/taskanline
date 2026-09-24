@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Промежуточная выгрузка схемы: в git лежит её результат, src/shared/api/schema.d.ts
+openapi.json
