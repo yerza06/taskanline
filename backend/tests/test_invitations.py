@@ -23,6 +23,16 @@ from tests.org import (
 )
 
 SignUp = Callable[..., Awaitable[AsyncClient]]
+NewClient = Callable[[], AsyncClient]
+
+
+async def read_only_client(owner: AsyncClient, new_client: NewClient) -> AsyncClient:
+    """Клиент агента с PAT `scope=read`: своей cookie-сессии у него нет."""
+    response = await owner.post(f"{API}/me/tokens", json={"name": "agent", "scope": "read"})
+    assert response.status_code == 201, response.text
+    agent = new_client()
+    agent.headers["Authorization"] = f"Bearer {response.json()['token']}"
+    return agent
 
 
 async def invite(
@@ -184,6 +194,16 @@ class TestCreate:
         assert response.status_code == 403
         assert response.json()["error"]["code"] == "insufficient_role"
 
+    async def test_read_scope_cannot_create(self, sign_up: SignUp, new_client: NewClient) -> None:
+        owner = await sign_up("owner@example.com")
+        workspace = await create_workspace(owner)
+        agent = await read_only_client(owner, new_client)
+
+        response = await invite(agent, "workspace", workspace["id"])
+
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "insufficient_scope"
+
 
 class TestList:
     async def test_lists_pending_only(self, sign_up: SignUp, db_session: AsyncSession) -> None:
@@ -219,6 +239,7 @@ class TestList:
         response = await member.get(f"{API}/invitations", params={"workspace_id": workspace["id"]})
 
         assert response.status_code == 403
+        assert response.json()["error"]["code"] == "insufficient_role"
 
 
 class TestRevoke:
@@ -245,6 +266,35 @@ class TestRevoke:
 
         assert response.status_code == 404
         assert response.json()["error"]["code"] == "invitation_not_found"
+
+    async def test_member_cannot_revoke(self, sign_up: SignUp, db_session: AsyncSession) -> None:
+        """Объект виден (workspace), но роли не хватает — 403, а не 404."""
+        owner = await sign_up("owner@example.com")
+        workspace = await create_workspace(owner)
+        invitation = (await invite(owner, "workspace", workspace["id"])).json()
+        member = await sign_up("bob@example.com")
+        await grant(
+            db_session,
+            user_id=await user_id_of(db_session, "bob@example.com"),
+            workspace_id=workspace["id"],
+            workspace_role="member",
+        )
+
+        response = await member.delete(f"{API}/invitations/{invitation['id']}")
+
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "insufficient_role"
+
+    async def test_read_scope_cannot_revoke(self, sign_up: SignUp, new_client: NewClient) -> None:
+        owner = await sign_up("owner@example.com")
+        workspace = await create_workspace(owner)
+        invitation = (await invite(owner, "workspace", workspace["id"])).json()
+        agent = await read_only_client(owner, new_client)
+
+        response = await agent.delete(f"{API}/invitations/{invitation['id']}")
+
+        assert response.status_code == 403
+        assert response.json()["error"]["code"] == "insufficient_scope"
 
     async def test_deleting_team_revokes_invitations_inside(
         self, sign_up: SignUp, db_session: AsyncSession
