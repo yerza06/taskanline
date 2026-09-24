@@ -7,8 +7,9 @@
 
 **Стек:** Python 3.13 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 16 · React 19 · TypeScript · Vite · Tailwind
 
-> Текущее состояние — **Этап 0 «Фундамент»**: работает каркас, бизнес-сущностей ещё нет.
-> Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
+> Текущее состояние — закрыты **этапы 0–2**: каркас, аутентификация и PAT-токены, рабочие
+> пространства/команды/проекты с приглашениями по почте и правами трёх уровней. Дальше — этап 3
+> «Ядро задач». Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
 
 ## Структура
 
@@ -121,6 +122,8 @@ API на `http://localhost:8000`.
 | `CorsSettings` | `CORS__` | `ORIGINS`, `ALLOW_CREDENTIALS`, `ALLOW_METHODS`, `ALLOW_HEADERS` |
 | `ServerSettings` | `SERVER__` | `HOST`, `PORT`, `RELOAD` |
 | `LogSettings` | `LOG__` | `LEVEL` |
+| `MailSettings` | `MAILER__` | `BACKEND` (`console`/`smtp`), `HOST`, `PORT`, `USERNAME`, `PASSWORD`, `FROM_ADDRESS` |
+| `InvitationSettings` | `INVITE__` | `TTL_DAYS`, лимит на `POST /invitations` (`ATTEMPTS`, `WINDOW_SECONDS`) |
 
 В коде они читаются так же: `settings.db.user`, `settings.security.secret_key`,
 `settings.log.level`. Строка подключения собирается из частей — `settings.db.url`, — и логин
@@ -130,6 +133,10 @@ API на `http://localhost:8000`.
 Приложение запускается как модуль: `python -m app.main` читает `SERVER__HOST`, `SERVER__PORT`
 и `SERVER__RELOAD` и поднимает uvicorn сам — отдельной команды `uvicorn` с дублирующими
 флагами нет.
+
+По умолчанию (`MAILER__BACKEND=console`) письмо не отправляется, а целиком пишется в лог API
+структурным событием `mail.console` — так на машине разработчика, где нет SMTP, всё равно можно
+увидеть ссылку `/invite/<token>` из приглашения и открыть её в браузере.
 
 ## Аутентификация
 
