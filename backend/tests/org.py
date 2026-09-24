@@ -44,6 +44,15 @@ async def create_team(
     return body
 
 
+async def create_project(
+    client: AsyncClient, team_id: str, *, name: str = "Сайт", **fields: Any
+) -> dict[str, Any]:
+    response = await client.post(f"{API}/teams/{team_id}/projects", json={"name": name, **fields})
+    assert response.status_code == 201, response.text
+    body: dict[str, Any] = response.json()
+    return body
+
+
 class RecordingMailer:
     """Почтальон тестов: складывает письма в список вместо отправки."""
 
