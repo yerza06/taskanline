@@ -44,6 +44,14 @@ class TestCreate:
 
         assert response.status_code == 422
 
+    async def test_newline_in_name_is_422(self, sign_up: SignUp) -> None:
+        """Перевод строки в названии ломает Subject письма-приглашения — 422, а не 500."""
+        owner = await sign_up("owner@example.com")
+
+        response = await owner.post(f"{API}/workspaces", json={"name": "Acme\nX", "slug": "acme"})
+
+        assert response.status_code == 422
+
     async def test_read_token_cannot_create(
         self, sign_up: SignUp, new_client: Callable[[], AsyncClient]
     ) -> None:
@@ -126,6 +134,16 @@ class TestUpdateDelete:
         workspace = await create_workspace(owner)
 
         response = await owner.patch(f"{API}/workspaces/{workspace['id']}", json={"name": None})
+
+        assert response.status_code == 422
+
+    async def test_newline_in_name_is_422(self, sign_up: SignUp) -> None:
+        owner = await sign_up("owner@example.com")
+        workspace = await create_workspace(owner)
+
+        response = await owner.patch(
+            f"{API}/workspaces/{workspace['id']}", json={"name": "Acme\nX"}
+        )
 
         assert response.status_code == 422
 

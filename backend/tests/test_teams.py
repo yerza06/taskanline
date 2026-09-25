@@ -56,6 +56,17 @@ class TestCreate:
 
         assert response.status_code == 422
 
+    async def test_newline_in_name_is_422(self, sign_up: SignUp) -> None:
+        owner = await sign_up("owner@example.com")
+        workspace = await create_workspace(owner)
+
+        response = await owner.post(
+            f"{API}/workspaces/{workspace['id']}/teams",
+            json={"key": "ENG", "name": "Acme\nX"},
+        )
+
+        assert response.status_code == 422
+
     async def test_duplicate_key_is_409(self, sign_up: SignUp) -> None:
         owner = await sign_up("owner@example.com")
         workspace = await create_workspace(owner)

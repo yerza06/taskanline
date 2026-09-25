@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import TeamRole
-from app.core.schemas import reject_explicit_null
+from app.core.schemas import reject_control_characters, reject_explicit_null
 from app.modules.workspaces.schemas import MemberRead
 
 KEY_PATTERN = r"^[A-Z]{2,5}$"
@@ -27,6 +27,7 @@ class TeamCreate(BaseModel):
     is_private: bool = False
 
     _key = field_validator("key", mode="before")(normalize_key)
+    _name = field_validator("name", mode="before")(reject_control_characters)
 
 
 class TeamUpdate(BaseModel):
@@ -38,6 +39,7 @@ class TeamUpdate(BaseModel):
     is_private: bool | None = None
 
     _key = field_validator("key", mode="before")(normalize_key)
+    _name = field_validator("name", mode="before")(reject_control_characters)
 
     @model_validator(mode="after")
     def _required_stay_set(self) -> Self:

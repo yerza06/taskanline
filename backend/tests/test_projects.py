@@ -53,6 +53,13 @@ class TestCreate:
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "lead_not_member"
 
+    async def test_newline_in_name_is_422(self, sign_up: SignUp) -> None:
+        owner, _, team = await setup(sign_up)
+
+        response = await owner.post(f"{API}/teams/{team['id']}/projects", json={"name": "Сайт\nX"})
+
+        assert response.status_code == 422
+
     async def test_target_before_start_is_400(self, sign_up: SignUp) -> None:
         owner, _, team = await setup(sign_up)
 

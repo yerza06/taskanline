@@ -4,10 +4,10 @@ from datetime import date, datetime
 from typing import Self
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import ProjectRole, ProjectStatus
-from app.core.schemas import reject_explicit_null
+from app.core.schemas import reject_control_characters, reject_explicit_null
 from app.modules.workspaces.schemas import MemberRead
 
 
@@ -21,6 +21,8 @@ class ProjectCreate(BaseModel):
     start_date: date | None = None
     target_date: date | None = None
 
+    _name = field_validator("name", mode="before")(reject_control_characters)
+
 
 class ProjectUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -31,6 +33,8 @@ class ProjectUpdate(BaseModel):
     lead_id: UUID | None = None
     start_date: date | None = None
     target_date: date | None = None
+
+    _name = field_validator("name", mode="before")(reject_control_characters)
 
     @model_validator(mode="after")
     def _required_stay_set(self) -> Self:

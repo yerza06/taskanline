@@ -7,7 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import WorkspaceRole
-from app.core.schemas import reject_explicit_null
+from app.core.schemas import reject_control_characters, reject_explicit_null
 from app.modules.users.models import User
 
 SLUG_PATTERN = r"^[a-z0-9-]{2,40}$"
@@ -25,6 +25,7 @@ class WorkspaceCreate(BaseModel):
     slug: str = Field(pattern=SLUG_PATTERN)
 
     _slug = field_validator("slug", mode="before")(normalize_slug)
+    _name = field_validator("name", mode="before")(reject_control_characters)
 
 
 class WorkspaceUpdate(BaseModel):
@@ -35,6 +36,7 @@ class WorkspaceUpdate(BaseModel):
     avatar_url: str | None = Field(default=None, max_length=2000)
 
     _slug = field_validator("slug", mode="before")(normalize_slug)
+    _name = field_validator("name", mode="before")(reject_control_characters)
 
     @model_validator(mode="after")
     def _required_stay_set(self) -> Self:
