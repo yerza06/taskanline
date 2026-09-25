@@ -262,7 +262,11 @@ async def load_access(
             ProjectMember.role,
         )
         .select_from(Project)
-        .join(Team, Team.id == Project.team_id)
+        # Защита в глубину: team_id всегда указывает на команду того же
+        # пространства (гарантия ProjectService.create), но JOIN не должен
+        # полагаться только на приложение — рассинхронизированные данные не
+        # должны стать видны никому.
+        .join(Team, and_(Team.id == Project.team_id, Team.workspace_id == Project.workspace_id))
         .outerjoin(WorkspaceMember, in_workspace)
         .outerjoin(TeamMember, in_team)
         .outerjoin(

@@ -184,6 +184,24 @@ class TestLoadAccess:
 
         assert await load_access(db_session, stranger.id, "team", uuid7()) is None
 
+    async def test_mismatched_project_workspace_is_ignored(self, db_session: AsyncSession) -> None:
+        """Защита в глубину: `team.workspace_id` должен совпадать с `project.workspace_id`.
+
+        В норме это гарантирует `ProjectService.create` (проект создаётся в
+        `ctx.workspace_id` той же команды), но JOIN не должен полагаться только на
+        приложение — рассинхронизированные данные не должны быть видны никому.
+        """
+        owner, project = await self._world(db_session)
+        other_workspace = Workspace(name="Other", slug="other", created_by=owner.id)
+        db_session.add(other_workspace)
+        await db_session.flush()
+        project.workspace_id = other_workspace.id
+        await db_session.flush()
+
+        access = await load_access(db_session, owner.id, "project", project.id)
+
+        assert access is None
+
     async def test_team_level_ignores_project_membership(self, db_session: AsyncSession) -> None:
         """Подрядчик в проекте не видит команду целиком."""
         _, project = await self._world(db_session)
