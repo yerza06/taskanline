@@ -126,13 +126,15 @@ class TeamService:
         await self._session.commit()
 
     async def grant(self, workspace_id: UUID, team_id: UUID, user_id: UUID, role: TeamRole) -> None:
-        """Членство по приглашению: создать или повысить. Без commit."""
-        member = await self._teams.get_member(team_id, user_id)
-        if member is None:
-            await self._teams.add_member(
-                workspace_id=workspace_id, team_id=team_id, user_id=user_id, role=role
-            )
-        elif ROLE_RANK[role] > ROLE_RANK[TeamRole(member.role)]:
+        """Членство по приглашению: создать или повысить. Без commit.
+
+        Вставка — `INSERT ... ON CONFLICT DO NOTHING`: конкурентный accept того же
+        членства не должен ронять транзакцию в `IntegrityError`.
+        """
+        member = await self._teams.add_member_if_absent(
+            workspace_id=workspace_id, team_id=team_id, user_id=user_id, role=role
+        )
+        if ROLE_RANK[role] > ROLE_RANK[TeamRole(member.role)]:
             member.role = role
             await self._session.flush()
 

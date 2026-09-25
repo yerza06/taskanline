@@ -135,12 +135,15 @@ class WorkspaceService:
     async def grant(self, workspace_id: UUID, user_id: UUID, role: WorkspaceRole) -> None:
         """Членство по принятому приглашению: создать или повысить, но не понизить.
 
+        Вставка идёт через `INSERT ... ON CONFLICT DO NOTHING`: два конкурентных
+        accept одного и того же членства не должны ронять транзакцию в
+        `IntegrityError` — гонка гасится в базе, а не проверкой перед вставкой.
         Без commit: принятие приглашения фиксирует всё одной транзакцией.
         """
-        member = await self._workspaces.get_member(workspace_id, user_id)
-        if member is None:
-            await self._workspaces.add_member(workspace_id=workspace_id, user_id=user_id, role=role)
-        elif ROLE_RANK[role] > ROLE_RANK[WorkspaceRole(member.role)]:
+        member = await self._workspaces.add_member_if_absent(
+            workspace_id=workspace_id, user_id=user_id, role=role
+        )
+        if ROLE_RANK[role] > ROLE_RANK[WorkspaceRole(member.role)]:
             member.role = role
             await self._session.flush()
 

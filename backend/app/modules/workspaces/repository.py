@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, delete, exists, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import WorkspaceRole
@@ -78,6 +79,27 @@ class WorkspaceRepository:
         member = WorkspaceMember(workspace_id=workspace_id, user_id=user_id, role=role)
         self._session.add(member)
         await self._session.flush()
+        return member
+
+    async def add_member_if_absent(
+        self, *, workspace_id: UUID, user_id: UUID, role: WorkspaceRole
+    ) -> WorkspaceMember:
+        """Вставка без гонки: `ON CONFLICT DO NOTHING` вместо «проверил — вставил».
+
+        Два конкурентных accept одного и того же членства раньше оба проходили
+        `get_member is None` и падали вторым `INSERT` в `IntegrityError` на
+        `idx_ws_members_unique`. Здесь конфликт гасится на уровне базы, а не ловится
+        через исключение — после него строка перечитывается и уже существует.
+        """
+        stmt = (
+            pg_insert(WorkspaceMember)
+            .values(workspace_id=workspace_id, user_id=user_id, role=role)
+            .on_conflict_do_nothing(index_elements=["workspace_id", "user_id"])
+        )
+        await self._session.execute(stmt)
+        await self._session.flush()
+        member = await self.get_member(workspace_id, user_id)
+        assert member is not None, "строка обязана существовать после INSERT ... ON CONFLICT"
         return member
 
     async def count_owners_locked(self, workspace_id: UUID) -> int:

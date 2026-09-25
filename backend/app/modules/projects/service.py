@@ -124,13 +124,15 @@ class ProjectService:
     async def grant(
         self, workspace_id: UUID, project_id: UUID, user_id: UUID, role: ProjectRole
     ) -> None:
-        """Членство по приглашению: создать или повысить. Без commit."""
-        member = await self._projects.get_member(project_id, user_id)
-        if member is None:
-            await self._projects.add_member(
-                workspace_id=workspace_id, project_id=project_id, user_id=user_id, role=role
-            )
-        elif ROLE_RANK[role] > ROLE_RANK[ProjectRole(member.role)]:
+        """Членство по приглашению: создать или повысить. Без commit.
+
+        Вставка — `INSERT ... ON CONFLICT DO NOTHING`: конкурентный accept того же
+        членства не должен ронять транзакцию в `IntegrityError`.
+        """
+        member = await self._projects.add_member_if_absent(
+            workspace_id=workspace_id, project_id=project_id, user_id=user_id, role=role
+        )
+        if ROLE_RANK[role] > ROLE_RANK[ProjectRole(member.role)]:
             member.role = role
             await self._session.flush()
 

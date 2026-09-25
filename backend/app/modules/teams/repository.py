@@ -4,6 +4,7 @@ from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, delete, exists, func, or_, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import TeamRole
@@ -89,6 +90,26 @@ class TeamRepository:
         member = TeamMember(workspace_id=workspace_id, team_id=team_id, user_id=user_id, role=role)
         self._session.add(member)
         await self._session.flush()
+        return member
+
+    async def add_member_if_absent(
+        self, *, workspace_id: UUID, team_id: UUID, user_id: UUID, role: TeamRole
+    ) -> TeamMember:
+        """Вставка без гонки: `ON CONFLICT DO NOTHING` вместо «проверил — вставил».
+
+        Два конкурентных accept одного и того же членства раньше оба проходили
+        `get_member is None` и падали вторым `INSERT` в `IntegrityError` на
+        `idx_team_members_unique`.
+        """
+        stmt = (
+            pg_insert(TeamMember)
+            .values(workspace_id=workspace_id, team_id=team_id, user_id=user_id, role=role)
+            .on_conflict_do_nothing(index_elements=["team_id", "user_id"])
+        )
+        await self._session.execute(stmt)
+        await self._session.flush()
+        member = await self.get_member(team_id, user_id)
+        assert member is not None, "строка обязана существовать после INSERT ... ON CONFLICT"
         return member
 
     async def delete_member(self, member: TeamMember) -> None:
