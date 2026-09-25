@@ -22,6 +22,13 @@ class UserService:
             raise ApiError(401, "invalid_token", "Сессия недействительна")
         return user
 
+    async def find(self, user_id: UUID) -> User | None:
+        """Без проверки активности: имя пригласившего нужно, даже если он заблокирован."""
+        return await self._users.get_by_id(user_id)
+
+    async def find_by_email(self, email: str) -> User | None:
+        return await self._users.get_by_email(email)
+
     async def update_profile(self, user_id: UUID, data: UserUpdate) -> User:
         user = await self.get_active(user_id)
         changes = data.model_dump(exclude_unset=True)

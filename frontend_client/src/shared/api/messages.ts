@@ -20,6 +20,12 @@ const MESSAGES: Record<string, string> = {
   user_not_found: 'Пользователь не найден',
   validation_error: 'Проверьте заполненные поля',
   internal_error: 'Внутренняя ошибка сервера. Попробуйте ещё раз',
+  invitation_not_found: 'Приглашение не найдено или отозвано',
+  invitation_not_pending: 'Приглашение уже недействительно',
+  invitation_email_mismatch: 'Приглашение отправлено на другой адрес',
+  login_required: 'Учётная запись с этим адресом уже есть — войдите, чтобы принять приглашение',
+  registration_required: 'Укажите имя и пароль',
+  insufficient_role: 'Недостаточно прав для этого действия',
 }
 
 function retryAfter(error: ApiError): number {

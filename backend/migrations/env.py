@@ -13,7 +13,11 @@ from app.core.database import Base
 
 # Модели импортируются здесь, чтобы автогенерация видела все таблицы.
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.invitations import models as invitations_models  # noqa: F401
+from app.modules.projects import models as projects_models  # noqa: F401
+from app.modules.teams import models as teams_models  # noqa: F401
 from app.modules.users import models as users_models  # noqa: F401
+from app.modules.workspaces import models as workspaces_models  # noqa: F401
 
 config = context.config
 

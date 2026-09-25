@@ -24,6 +24,7 @@ from app.core.csrf import CsrfMiddleware
 from app.core.database import get_engine
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
+from app.core.mail import build_mailer
 from app.core.middleware import RequestIdMiddleware
 from app.core.rate_limit import InMemoryRateLimiter
 
@@ -54,6 +55,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    # До configure_logging(): она переустанавливает процессоры structlog, и лог,
+    # отправленный после неё, тестовый `capture_logs` уже не увидит.
+    if settings.app.environment == "production" and settings.mailer.backend == "console":
+        logger.warning("mail.console_in_production")
     configure_logging(settings.log.level, json_output=settings.app.environment != "local")
 
     app = FastAPI(
@@ -64,6 +69,8 @@ def create_app() -> FastAPI:
     # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
+    # Почтальон, как и лимитер, принадлежит приложению: тесты подменяют его своим.
+    app.state.mailer = build_mailer(settings.mailer)
     app.add_middleware(CsrfMiddleware)
     # RequestIdMiddleware добавляется последним и потому отрабатывает первым:
     # отказ по CSRF должен попадать в лог с тем же request_id, что и запрос.

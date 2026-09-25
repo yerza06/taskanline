@@ -1,6 +1,6 @@
 import { HttpResponse, http, type HttpHandler } from 'msw'
 
-import type { Me, TokenRead } from '@/shared/api/types'
+import type { InvitationPreview, Me, TokenRead } from '@/shared/api/types'
 
 export const ME: Me = {
   id: '019a5c1e-0000-7000-8000-000000000001',
@@ -11,6 +11,7 @@ export const ME: Me = {
   created_at: '2026-09-18T10:00:00Z',
   auth_method: 'session',
   scopes: ['read', 'write'],
+  memberships: { workspaces: [], teams: [], projects: [] },
 }
 
 export const TOKEN: TokenRead = {
@@ -50,4 +51,23 @@ export function tokens(items: TokenRead[]): HttpHandler[] {
 
 export function defaultHandlers(): HttpHandler[] {
   return [...signedIn(), ...tokens([])]
+}
+
+export const PREVIEW: InvitationPreview = {
+  workspace_name: 'Acme',
+  inviter_name: 'Ольга Владелец',
+  email: 'anna@example.com',
+  scope_type: 'project',
+  role: 'member',
+  status: 'pending',
+  expires_at: '2026-10-02T10:00:00Z',
+}
+
+/** Превью приглашения по любому токену. */
+export function invitation(preview: Partial<InvitationPreview> = {}): HttpHandler[] {
+  return [
+    http.get('/api/v1/invitations/token/:token', () =>
+      HttpResponse.json({ ...PREVIEW, ...preview }),
+    ),
+  ]
 }

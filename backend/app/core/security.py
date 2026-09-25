@@ -98,6 +98,11 @@ def generate_refresh_token() -> str:
     return _base62(secrets.token_bytes(_TOKEN_BYTES), _TOKEN_LENGTH)
 
 
+def generate_invitation_token() -> str:
+    """Токен ссылки из письма: такой же непрозрачный случайный, как refresh-токен."""
+    return generate_refresh_token()
+
+
 def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
