@@ -55,6 +55,10 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    # До configure_logging(): она переустанавливает процессоры structlog, и лог,
+    # отправленный после неё, тестовый `capture_logs` уже не увидит.
+    if settings.app.environment == "production" and settings.mailer.backend == "console":
+        logger.warning("mail.console_in_production")
     configure_logging(settings.log.level, json_output=settings.app.environment != "local")
 
     app = FastAPI(
