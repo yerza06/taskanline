@@ -50,7 +50,8 @@ export function tokens(items: TokenRead[]): HttpHandler[] {
 }
 
 export function defaultHandlers(): HttpHandler[] {
-  return [...signedIn(), ...tokens([])]
+  // Без пространств: человек только что зарегистрировался. Мир с задачами — `world()`.
+  return [...signedIn(), ...tokens([]), http.get('/api/v1/workspaces', () => HttpResponse.json({ items: [] }))]
 }
 
 export const PREVIEW: InvitationPreview = {

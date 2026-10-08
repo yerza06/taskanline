@@ -35,6 +35,8 @@ export interface RequestOptions {
   /** Тело запроса; сериализуется и проставляет Content-Type. */
   json?: unknown
   signal?: AbortSignal
+  /** Дополнительные заголовки — например, `Idempotency-Key` у создания задачи. */
+  headers?: Record<string, string>
 }
 
 /**
@@ -56,7 +58,7 @@ export function markSessionActive(): void {
 }
 
 function send(path: string, options: RequestOptions): Promise<Response> {
-  const { method = 'GET', json, signal } = options
+  const { method = 'GET', json, signal, headers = {} } = options
 
   return fetch(`${API_PREFIX}${path}`, {
     method,
@@ -68,6 +70,7 @@ function send(path: string, options: RequestOptions): Promise<Response> {
       // Ставится на каждый запрос: дешевле, чем помнить, какие из них мутируют.
       'X-Requested-With': 'XMLHttpRequest',
       ...(json === undefined ? {} : { 'Content-Type': 'application/json' }),
+      ...headers,
     },
     body: json === undefined ? undefined : JSON.stringify(json),
   })

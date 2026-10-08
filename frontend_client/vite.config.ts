@@ -11,7 +11,9 @@ export default defineConfig({
     // (src/routeTree.gen.ts) и держит его в актуальном состоянии.
     // Ставится первым: он должен отработать до того, как React-плагин
     // начнёт трансформировать сгенерированный файл.
-    tanstackRouter({ target: 'react' }),
+    // autoCodeSplitting: экран попадает в бандл, когда на него переходят, —
+    // доска и карточка задачи не грузятся вместе со страницей входа.
+    tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
     tailwindcss(),
   ],
