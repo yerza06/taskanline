@@ -361,3 +361,85 @@ class TestFilters:
         assert response.status_code == 400
         assert response.json()["error"]["code"] == "invalid_filter"
         assert response.json()["error"]["details"] == {"field": "estimate"}
+
+
+async def query(client: AsyncClient, w: World, **body: Any) -> Any:
+    return await client.post(f"{API}/views/query", json={"workspace_id": w.workspace["id"], **body})
+
+
+class TestAdHocQuery:
+    """`POST /views/query` — несохранённый view: та же грамматика, тот же транслятор."""
+
+    async def test_filters_sort_and_pages(self, sign_up: SignUp, db_session: AsyncSession) -> None:
+        w = await World(sign_up, db_session).build()
+        await w.task(title="Без приоритета")  # ENG-1
+        await w.task(title="Срочная", priority=1)  # ENG-2
+        await w.task(title="Низкая", priority=4)  # ENG-3
+        await w.task(title="Высокая", priority=2, assignee_id=None)  # ENG-4
+        body = {
+            "filters": {"priority": {"op": "in", "value": [1, 2, 4]}},
+            "sort_by": "priority",
+            "limit": 2,
+        }
+
+        first = (await query(w.owner, w, **body)).json()
+        (group,) = first["groups"]
+        second = (await query(w.owner, w, **body, cursor=group["next_cursor"])).json()
+
+        assert first["group_by"] is None and "view_id" not in first
+        assert (group["key"], group["count"], group["has_more"]) == (None, 3, True)
+        assert [t["key"] for t in group["items"]] == ["ENG-2", "ENG-4"]
+        assert [t["key"] for t in second["groups"][0]["items"]] == ["ENG-3"]
+
+    async def test_grouping_and_extended_grammar(
+        self, sign_up: SignUp, db_session: AsyncSession
+    ) -> None:
+        w = await World(sign_up, db_session).build()
+        _, dev_id = await w.person("dev@example.com", workspace_role="member")
+        parent = await w.task(title="Родитель")  # ENG-1
+        await w.task(title="Подзадача", parent_id=parent["id"])  # ENG-2
+        await w.task(title="Чья-то", assignee_id=dev_id, priority=3)  # ENG-3
+
+        unassigned = await query(
+            w.owner, w, filters={"assignee_id": {"op": "is_null"}}, group_by="priority"
+        )
+        children = await query(w.owner, w, filters={"parent_id": {"op": "in", "value": ["ENG-1"]}})
+        by_id = await query(
+            w.owner, w, filters={"parent_id": {"op": "in", "value": [parent["id"]]}}
+        )
+
+        assert grouped_keys(unassigned.json()) == [("0", ["ENG-1", "ENG-2"])]
+        assert children.status_code == 422
+        assert [t["key"] for t in by_id.json()["groups"][0]["items"]] == ["ENG-2"]
+
+    async def test_reader_visibility_and_read_token(
+        self, sign_up: SignUp, db_session: AsyncSession
+    ) -> None:
+        w = await World(sign_up, db_session).build()
+        secret = await create_team(w.owner, w.workspace["id"], key="SEC", is_private=True)
+        await w.task(title="Открытая")
+        await create_task(w.owner, team_id=secret["id"], title="Тайная")
+        member, _ = await w.person("member@example.com", workspace_role="member")
+        token = (
+            await member.post(f"{API}/me/tokens", json={"name": "агент", "scope": "read"})
+        ).json()["token"]
+
+        response = await member.post(
+            f"{API}/views/query",
+            json={"workspace_id": w.workspace["id"]},
+            headers={"Authorization": f"Bearer {token}"},
+        )
+
+        assert response.status_code == 200, response.text
+        assert [t["key"] for t in response.json()["groups"][0]["items"]] == ["ENG-1"]
+
+    async def test_bad_definition_is_422(self, sign_up: SignUp, db_session: AsyncSession) -> None:
+        w = await World(sign_up, db_session).build()
+
+        for body in (
+            {"filters": {"asignee_id": {"op": "in", "value": ["@me"]}}},
+            {"sort_by": "random"},
+            {"group": "1"},
+        ):
+            response = await query(w.owner, w, **body)
+            assert response.status_code in (400, 422), body

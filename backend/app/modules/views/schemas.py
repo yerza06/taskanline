@@ -7,6 +7,7 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.enums import SortDirection, ViewGroupBy, ViewLayout, ViewScope, ViewSortBy
+from app.core.pagination import DEFAULT_LIMIT, MAX_LIMIT
 from app.core.schemas import reject_control_characters, reject_explicit_null
 from app.modules.states.schemas import COLOR_PATTERN
 from app.modules.tasks.schemas import TaskGroup
@@ -98,6 +99,28 @@ class ViewUpdate(BaseModel):
         return self
 
 
+class ViewQuery(BaseModel):
+    """Определение несохранённого view и страница его выполнения — для CLI и агентов."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    workspace_id: UUID
+    filters: Filters = Field(default_factory=dict)
+    group_by: ViewGroupBy | None = None
+    sort_by: ViewSortBy = ViewSortBy.MANUAL
+    sort_direction: SortDirection = SortDirection.ASC
+    group: str | None = Field(
+        default=None, description="Ключ группы — листать одну; none — группа без значения"
+    )
+    cursor: str | None = None
+    limit: int = Field(default=DEFAULT_LIMIT, ge=1, le=MAX_LIMIT, description="Задач на группу")
+
+    @model_validator(mode="after")
+    def _valid_filters(self) -> Self:
+        _check_filters(self.filters)
+        return self
+
+
 class ViewRead(BaseModel):
     id: UUID
     workspace_id: UUID
@@ -124,7 +147,10 @@ class ViewList(BaseModel):
     items: list[ViewRead]
 
 
-class ViewTasks(BaseModel):
-    view_id: UUID
+class QueryTasks(BaseModel):
     group_by: ViewGroupBy | None
     groups: list[TaskGroup]
+
+
+class ViewTasks(QueryTasks):
+    view_id: UUID

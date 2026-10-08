@@ -204,6 +204,13 @@ CASES = [
     ),
     Case(
         "POST",
+        "/views/query",
+        "workspace",
+        GUEST,
+        {"workspace_id": "{workspace_id}", "filters": {}},
+    ),
+    Case(
+        "POST",
         "/views",
         "workspace",
         ADMIN,
