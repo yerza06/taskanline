@@ -161,6 +161,8 @@ CASES = [
     Case("DELETE", "/tasks/{task_id}/relations/{relation_id}", "task", MEMBER),
     Case("PUT", "/tasks/{task_id}/labels", "task", MEMBER, {"label_ids": []}),
     Case("GET", "/tasks/{task_id}/activities", "task", VIEWER),
+    Case("GET", "/tasks/{task_id}/comments", "task", VIEWER),
+    Case("POST", "/tasks/{task_id}/comments", "task", MEMBER, {"body": "Комментарий"}),
     # Метки.
     Case("GET", "/labels?workspace_id={workspace_id}", "workspace", GUEST),
     Case(

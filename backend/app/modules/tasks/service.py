@@ -534,6 +534,21 @@ class TaskService:
 
     # --- Для других модулей -----------------------------------------------------
 
+    async def find_live(self, task_id: UUID, workspace_id: UUID) -> Task | None:
+        """Неудалённая задача по id — без проверки прав, их проверил вызывающий."""
+        task = await self._tasks.get_in_workspace(task_id, workspace_id)
+        return task if task is not None and task.deleted_at is None else None
+
+    async def record(
+        self,
+        ctx: AccessContext,
+        task: Task,
+        kind: ActivityType,
+        payload: dict[str, Any] | None = None,
+    ) -> None:
+        """Событие в истории задачи от другого модуля. Без commit."""
+        await self._record(ctx, task, kind, payload)
+
     async def count_in_state(self, state_id: UUID) -> int:
         return await self._tasks.count_in_state(state_id)
 

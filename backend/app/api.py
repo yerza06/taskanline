@@ -8,6 +8,7 @@ from fastapi import APIRouter
 
 from app.modules.activities import router as activities_router
 from app.modules.auth import router as auth_router
+from app.modules.comments import router as comments_router
 from app.modules.invitations import router as invitations_router
 from app.modules.labels import router as labels_router
 from app.modules.notifications import router as notifications_router
@@ -34,3 +35,5 @@ api_router.include_router(invitations_router.router)
 api_router.include_router(labels_router.router)
 api_router.include_router(tasks_router.router)
 api_router.include_router(activities_router.router)
+api_router.include_router(comments_router.task_comments_router)
+api_router.include_router(comments_router.router)
