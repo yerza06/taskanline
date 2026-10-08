@@ -75,7 +75,7 @@ known-first-party = ["app", "tests", "sdk_tests", "cli_tests", "taskanline_sdk",
 python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["backend/app", "sdk/src"]
+files = ["backend/app", "sdk/src", "cli/src"]
 exclude = ["backend/migrations/"]
 
 [[tool.mypy.overrides]]
@@ -91,5 +91,5 @@ asyncio_mode = "auto"
 # Фикстуры живут в том же цикле событий, что и тест: соединение asyncpg,
 # открытое в чужом цикле, падает с "attached to a different loop".
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["backend/tests", "sdk/sdk_tests"]
+testpaths = ["backend/tests", "sdk/sdk_tests", "cli/cli_tests"]
 addopts = "-q --strict-markers"
