@@ -186,6 +186,29 @@ CASES = [
     ),
     Case("PATCH", "/labels/{label_id}", "label", MEMBER, {"color": "#00ff00"}),
     Case("DELETE", "/labels/{label_id}", "label", MEMBER),
+    # Этап 4: создание и список views. Остальное — по автору и scope, в test_views.
+    Case("GET", "/views?workspace_id={workspace_id}", "workspace", GUEST),
+    Case(
+        "POST",
+        "/views",
+        "workspace",
+        GUEST,
+        {"workspace_id": "{workspace_id}", "scope": "user", "name": "Мой"},
+    ),
+    Case(
+        "POST",
+        "/views",
+        "team",
+        MEMBER,
+        {"workspace_id": "{workspace_id}", "scope": "team", "team_id": "{team_id}", "name": "К"},
+    ),
+    Case(
+        "POST",
+        "/views",
+        "workspace",
+        ADMIN,
+        {"workspace_id": "{workspace_id}", "scope": "workspace", "name": "Общий"},
+    ),
 ]
 
 
@@ -328,7 +351,8 @@ def test_matrix_covers_every_org_route() -> None:
     public = {("GET", "/invitations/token/{token}"), ("POST", "/invitations/token/{token}/accept")}
     # Проверяются отдельно: список своих и создание не привязаны к объекту,
     # отзыв приглашения — в test_invitations, комментарии (автор или admin) — в
-    # test_comments, входящие уведомления — только свои, в test_notifications.
+    # test_comments, входящие уведомления — только свои, в test_notifications, views —
+    # по автору и scope, в test_views.
     special = {
         ("GET", "/workspaces"),
         ("POST", "/workspaces"),
@@ -337,6 +361,10 @@ def test_matrix_covers_every_org_route() -> None:
         ("DELETE", "/comments/{comment_id}"),
         ("GET", "/me/notifications"),
         ("POST", "/me/notifications/{notification_id}/read"),
+        ("GET", "/views/{view_id}"),
+        ("PATCH", "/views/{view_id}"),
+        ("DELETE", "/views/{view_id}"),
+        ("GET", "/views/{view_id}/tasks"),
     }
     prefixes = (
         "/workspaces",
@@ -348,6 +376,7 @@ def test_matrix_covers_every_org_route() -> None:
         "/labels",
         "/comments",
         "/me/notifications",
+        "/views",
     )
     http_methods = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 

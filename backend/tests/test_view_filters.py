@@ -222,9 +222,7 @@ def test_dynamic_values_resolve_at_execution() -> None:
 
     (expression,) = translate(conditions, later)
 
-    assert expression.compile(dialect=DIALECT).params == {
-        "due_date_1": date(2026, 12, 31)
-    }
+    assert expression.compile(dialect=DIALECT).params == {"due_date_1": date(2026, 12, 31)}
 
 
 class TestInjection:

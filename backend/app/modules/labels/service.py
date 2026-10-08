@@ -81,6 +81,9 @@ class LabelService:
 
     # --- Для задач ------------------------------------------------------------
 
+    async def get_many(self, label_ids: Collection[UUID], workspace_id: UUID) -> Sequence[Label]:
+        return await self._labels.get_many(label_ids, workspace_id)
+
     async def labels_by_task(self, task_ids: Collection[UUID]) -> dict[UUID, list[Label]]:
         grouped: dict[UUID, list[Label]] = defaultdict(list)
         for task_id, label in await self._labels.labels_of_tasks(task_ids):
