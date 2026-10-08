@@ -79,7 +79,7 @@ def test_sort_and_limit(tkl: Tkl, api: FakeApi) -> None:
         ("assignee:ghost@example.com", "user_not_found", "Участник «ghost@example.com»"),
         ("label:nope", "label_not_found", "Доступные: bug"),
         ("team:DES", "team_not_found", "Доступные команды: ENG"),
-        ("state:Doing", "state_not_found", "Статусы: Canceled, Done, In Progress, Todo"),
+        ("state:Doing", "state_not_found", "Доступные: Canceled, Done, In Progress, Todo"),
     ],
 )
 def test_unknown_names_are_4(tkl: Tkl, api: FakeApi, dsl: str, code: str, message: str) -> None:

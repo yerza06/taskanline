@@ -19,6 +19,7 @@ from taskanline_cli.errors import CliError, ExitCode, describe, exit_code_for
 from taskanline_cli.filters import FilterSyntaxError
 from taskanline_cli.output import Format
 from taskanline_sdk import TasKanLineError
+from taskanline_sdk.resolve import ResolveError
 
 app = typer.Typer(
     name="tkl",
@@ -40,6 +41,11 @@ app.add_typer(view.app, name="view")
 app.add_typer(label.app, name="label")
 
 CLICK_USAGE_ERROR = 2
+RESOLVE_EXIT = {
+    "not_found": ExitCode.NOT_FOUND,
+    "ambiguous": ExitCode.CONFLICT,
+    "required": ExitCode.USAGE,
+}
 FLAGS = frozenset({"--json", "--quiet", "-q", "--no-color", "--verbose", "-v"})
 VALUED = frozenset({"--output", "--profile", "--api-url", "--token", "--timeout"})
 
@@ -136,6 +142,9 @@ def main(argv: list[str] | None = None) -> int:
     except CliError as error:
         text = f"Ошибка [{error.code}]: {error.message}."
         return _fail(text + (f"\n{error.hint}" if error.hint else ""), error.exit_code)
+    except ResolveError as error:
+        text = f"Ошибка [{error.code}]: {error.message}."
+        return _fail(text + (f"\n{error.hint}" if error.hint else ""), RESOLVE_EXIT[error.kind])
     except TasKanLineError as error:
         return _fail(describe(error), exit_code_for(error))
     return 0

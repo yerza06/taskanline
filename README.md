@@ -7,11 +7,11 @@
 
 **Стек:** Python 3.13 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 16 · React 19 · TypeScript · Vite · Tailwind
 
-> Текущее состояние — закрыты **этапы 0–4 и 7**: каркас, аутентификация и PAT-токены, рабочие
+> Текущее состояние — закрыты **этапы 0–4, 7 и 8**: каркас, аутентификация и PAT-токены, рабочие
 > пространства/команды/проекты с приглашениями по почте и правами трёх уровней, ядро задач
 > (ключи `ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления),
-> сохраняемые Views, Python-SDK и CLI `tkl` для агентов. Дальше — веб-клиент (этап 5) и
-> MCP-сервер (этап 8). Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
+> сохраняемые Views, Python-SDK, CLI `tkl` и MCP-сервер `tkl-mcp` для агентов. Дальше —
+> веб-клиент (этап 5). Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
 
 ## Структура
 
@@ -21,7 +21,7 @@ frontend_client/  веб-клиент (Vite + React + TypeScript), светла�
 frontend_admin/   админ-панель: тот же стек, те же токены тем        — этап 6
 sdk/              Python-клиент API, общий для CLI и MCP
 cli/              CLI tkl для агентов и терминала
-mcp/              MCP-сервер                                          — этап 8
+mcp/              MCP-сервер tkl-mcp для Claude, ChatGPT и других клиентов
 deploy/           docker-compose и конфигурация nginx
 docs/             спецификации (симлинк в Obsidian)
 ```
@@ -181,6 +181,34 @@ tkl view run "Мои незакрытые баги"
 Вывод — таблица в терминале и JSON при перенаправлении (`tkl task list > tasks.json`). Коды
 выхода различают ошибки: 3 — нет доступа, 4 — не найдено, 6 — rate limit, 7 — сеть. Полное
 описание — в CLI-спеке (`docs/superpowers/specs/…-cli-spec.md`).
+
+## MCP-сервер `tkl-mcp`
+
+Даёт модели инструменты трекера прямо в диалоге: `list_teams`, `search_tasks`, `get_task`,
+`run_view`, `create_task`, `update_task_state`, `comment_task` и другие. Конфиг общий с `tkl`:
+после `tkl auth login` сервер готов.
+
+```bash
+uv tool install ./mcp                      # бинарь tkl-mcp
+```
+
+Claude Desktop (`claude_desktop_config.json`) или Claude Code (`.mcp.json`):
+
+```json
+{
+  "mcpServers": {
+    "taskanline": {"command": "tkl-mcp", "args": ["--profile", "work"]}
+  }
+}
+```
+
+Только чтение — `"args": ["--read-only"]` и токен со `scope=read`: инструменты записи исчезают
+из каталога, а токен не даст ничего изменить, даже если флаг забыли. `--workspace acme` прячет
+остальные пространства.
+
+Удалённый режим для claude.ai и ChatGPT — `tkl-mcp --transport http --port 8765
+--allowed-host mcp.example.com` за HTTPS-прокси; клиент подключается к
+`https://mcp.example.com/mcp` и передаёт свой токен заголовком `Authorization: Bearer`.
 
 Если доступ к единственному `superadmin` потерян, роль назначается с сервера:
 
