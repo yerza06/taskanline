@@ -9,19 +9,24 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthedRouteImport } from './routes/_authed'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
+import { Route as AuthedOnboardingRouteImport } from './routes/_authed.onboarding'
 import { Route as AuthedProfileRouteImport } from './routes/_authed.profile'
 import { Route as AuthedTokensRouteImport } from './routes/_authed.tokens'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as AuthedWWorkspaceRouteImport } from './routes/_authed.w.$workspace'
+import { Route as AuthedWWorkspaceIndexRouteImport } from './routes/_authed.w.$workspace.index'
+import { Route as AuthedWWorkspaceInboxRouteImport } from './routes/_authed.w.$workspace.inbox'
+import { Route as AuthedWWorkspaceMembersRouteImport } from './routes/_authed.w.$workspace.members'
+import { Route as AuthedWWorkspaceProjectProjectIdRouteImport } from './routes/_authed.w.$workspace.project.$projectId'
+import { Route as AuthedWWorkspaceTaskKeyRouteImport } from './routes/_authed.w.$workspace.task.$key'
+import { Route as AuthedWWorkspaceViewViewIdRouteImport } from './routes/_authed.w.$workspace.view.$viewId'
+import { Route as AuthedWWorkspaceTeamKeyIndexRouteImport } from './routes/_authed.w.$workspace.team.$key.index'
+import { Route as AuthedWWorkspaceTeamKeySettingsRouteImport } from './routes/_authed.w.$workspace.team.$key.settings'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -35,6 +40,16 @@ const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedIndexRoute = AuthedIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedOnboardingRoute = AuthedOnboardingRouteImport.update({
+  id: '/onboarding',
+  path: '/onboarding',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedProfileRoute = AuthedProfileRouteImport.update({
   id: '/profile',
@@ -51,52 +66,169 @@ const InviteTokenRoute = InviteTokenRouteImport.update({
   path: '/invite/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedWWorkspaceRoute = AuthedWWorkspaceRouteImport.update({
+  id: '/w/$workspace',
+  path: '/w/$workspace',
+  getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedWWorkspaceIndexRoute = AuthedWWorkspaceIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedWWorkspaceRoute,
+} as any)
+const AuthedWWorkspaceInboxRoute = AuthedWWorkspaceInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AuthedWWorkspaceRoute,
+} as any)
+const AuthedWWorkspaceMembersRoute = AuthedWWorkspaceMembersRouteImport.update({
+  id: '/members',
+  path: '/members',
+  getParentRoute: () => AuthedWWorkspaceRoute,
+} as any)
+const AuthedWWorkspaceProjectProjectIdRoute =
+  AuthedWWorkspaceProjectProjectIdRouteImport.update({
+    id: '/project/$projectId',
+    path: '/project/$projectId',
+    getParentRoute: () => AuthedWWorkspaceRoute,
+  } as any)
+const AuthedWWorkspaceTaskKeyRoute = AuthedWWorkspaceTaskKeyRouteImport.update({
+  id: '/task/$key',
+  path: '/task/$key',
+  getParentRoute: () => AuthedWWorkspaceRoute,
+} as any)
+const AuthedWWorkspaceViewViewIdRoute =
+  AuthedWWorkspaceViewViewIdRouteImport.update({
+    id: '/view/$viewId',
+    path: '/view/$viewId',
+    getParentRoute: () => AuthedWWorkspaceRoute,
+  } as any)
+const AuthedWWorkspaceTeamKeyIndexRoute =
+  AuthedWWorkspaceTeamKeyIndexRouteImport.update({
+    id: '/team/$key/',
+    path: '/team/$key/',
+    getParentRoute: () => AuthedWWorkspaceRoute,
+  } as any)
+const AuthedWWorkspaceTeamKeySettingsRoute =
+  AuthedWWorkspaceTeamKeySettingsRouteImport.update({
+    id: '/team/$key/settings',
+    path: '/team/$key/settings',
+    getParentRoute: () => AuthedWWorkspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
+  '/': typeof AuthedIndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/onboarding': typeof AuthedOnboardingRoute
   '/profile': typeof AuthedProfileRoute
   '/tokens': typeof AuthedTokensRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/w/$workspace': typeof AuthedWWorkspaceRouteWithChildren
+  '/w/$workspace/inbox': typeof AuthedWWorkspaceInboxRoute
+  '/w/$workspace/members': typeof AuthedWWorkspaceMembersRoute
+  '/w/$workspace/': typeof AuthedWWorkspaceIndexRoute
+  '/w/$workspace/project/$projectId': typeof AuthedWWorkspaceProjectProjectIdRoute
+  '/w/$workspace/task/$key': typeof AuthedWWorkspaceTaskKeyRoute
+  '/w/$workspace/view/$viewId': typeof AuthedWWorkspaceViewViewIdRoute
+  '/w/$workspace/team/$key/settings': typeof AuthedWWorkspaceTeamKeySettingsRoute
+  '/w/$workspace/team/$key/': typeof AuthedWWorkspaceTeamKeyIndexRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/onboarding': typeof AuthedOnboardingRoute
   '/profile': typeof AuthedProfileRoute
   '/tokens': typeof AuthedTokensRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/': typeof AuthedIndexRoute
+  '/w/$workspace/inbox': typeof AuthedWWorkspaceInboxRoute
+  '/w/$workspace/members': typeof AuthedWWorkspaceMembersRoute
+  '/w/$workspace': typeof AuthedWWorkspaceIndexRoute
+  '/w/$workspace/project/$projectId': typeof AuthedWWorkspaceProjectProjectIdRoute
+  '/w/$workspace/task/$key': typeof AuthedWWorkspaceTaskKeyRoute
+  '/w/$workspace/view/$viewId': typeof AuthedWWorkspaceViewViewIdRoute
+  '/w/$workspace/team/$key/settings': typeof AuthedWWorkspaceTeamKeySettingsRoute
+  '/w/$workspace/team/$key': typeof AuthedWWorkspaceTeamKeyIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteWithChildren
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
+  '/_authed/onboarding': typeof AuthedOnboardingRoute
   '/_authed/profile': typeof AuthedProfileRoute
   '/_authed/tokens': typeof AuthedTokensRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/_authed/': typeof AuthedIndexRoute
+  '/_authed/w/$workspace': typeof AuthedWWorkspaceRouteWithChildren
+  '/_authed/w/$workspace/inbox': typeof AuthedWWorkspaceInboxRoute
+  '/_authed/w/$workspace/members': typeof AuthedWWorkspaceMembersRoute
+  '/_authed/w/$workspace/': typeof AuthedWWorkspaceIndexRoute
+  '/_authed/w/$workspace/project/$projectId': typeof AuthedWWorkspaceProjectProjectIdRoute
+  '/_authed/w/$workspace/task/$key': typeof AuthedWWorkspaceTaskKeyRoute
+  '/_authed/w/$workspace/view/$viewId': typeof AuthedWWorkspaceViewViewIdRoute
+  '/_authed/w/$workspace/team/$key/settings': typeof AuthedWWorkspaceTeamKeySettingsRoute
+  '/_authed/w/$workspace/team/$key/': typeof AuthedWWorkspaceTeamKeyIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    '/' | '/login' | '/register' | '/profile' | '/tokens' | '/invite/$token'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/onboarding'
+    | '/profile'
+    | '/tokens'
+    | '/invite/$token'
+    | '/w/$workspace'
+    | '/w/$workspace/inbox'
+    | '/w/$workspace/members'
+    | '/w/$workspace/'
+    | '/w/$workspace/project/$projectId'
+    | '/w/$workspace/task/$key'
+    | '/w/$workspace/view/$viewId'
+    | '/w/$workspace/team/$key/settings'
+    | '/w/$workspace/team/$key/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/profile' | '/tokens' | '/invite/$token'
+  to:
+    | '/login'
+    | '/register'
+    | '/onboarding'
+    | '/profile'
+    | '/tokens'
+    | '/invite/$token'
+    | '/'
+    | '/w/$workspace/inbox'
+    | '/w/$workspace/members'
+    | '/w/$workspace'
+    | '/w/$workspace/project/$projectId'
+    | '/w/$workspace/task/$key'
+    | '/w/$workspace/view/$viewId'
+    | '/w/$workspace/team/$key/settings'
+    | '/w/$workspace/team/$key'
   id:
     | '__root__'
-    | '/'
     | '/_authed'
     | '/login'
     | '/register'
+    | '/_authed/onboarding'
     | '/_authed/profile'
     | '/_authed/tokens'
     | '/invite/$token'
+    | '/_authed/'
+    | '/_authed/w/$workspace'
+    | '/_authed/w/$workspace/inbox'
+    | '/_authed/w/$workspace/members'
+    | '/_authed/w/$workspace/'
+    | '/_authed/w/$workspace/project/$projectId'
+    | '/_authed/w/$workspace/task/$key'
+    | '/_authed/w/$workspace/view/$viewId'
+    | '/_authed/w/$workspace/team/$key/settings'
+    | '/_authed/w/$workspace/team/$key/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
   AuthedRoute: typeof AuthedRouteWithChildren
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
@@ -105,13 +237,6 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -132,6 +257,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/': {
+      id: '/_authed/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedIndexRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/onboarding': {
+      id: '/_authed/onboarding'
+      path: '/onboarding'
+      fullPath: '/onboarding'
+      preLoaderRoute: typeof AuthedOnboardingRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/profile': {
       id: '/_authed/profile'
@@ -154,24 +293,117 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InviteTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/w/$workspace': {
+      id: '/_authed/w/$workspace'
+      path: '/w/$workspace'
+      fullPath: '/w/$workspace'
+      preLoaderRoute: typeof AuthedWWorkspaceRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/w/$workspace/': {
+      id: '/_authed/w/$workspace/'
+      path: '/'
+      fullPath: '/w/$workspace/'
+      preLoaderRoute: typeof AuthedWWorkspaceIndexRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/inbox': {
+      id: '/_authed/w/$workspace/inbox'
+      path: '/inbox'
+      fullPath: '/w/$workspace/inbox'
+      preLoaderRoute: typeof AuthedWWorkspaceInboxRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/members': {
+      id: '/_authed/w/$workspace/members'
+      path: '/members'
+      fullPath: '/w/$workspace/members'
+      preLoaderRoute: typeof AuthedWWorkspaceMembersRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/project/$projectId': {
+      id: '/_authed/w/$workspace/project/$projectId'
+      path: '/project/$projectId'
+      fullPath: '/w/$workspace/project/$projectId'
+      preLoaderRoute: typeof AuthedWWorkspaceProjectProjectIdRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/task/$key': {
+      id: '/_authed/w/$workspace/task/$key'
+      path: '/task/$key'
+      fullPath: '/w/$workspace/task/$key'
+      preLoaderRoute: typeof AuthedWWorkspaceTaskKeyRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/view/$viewId': {
+      id: '/_authed/w/$workspace/view/$viewId'
+      path: '/view/$viewId'
+      fullPath: '/w/$workspace/view/$viewId'
+      preLoaderRoute: typeof AuthedWWorkspaceViewViewIdRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/team/$key/': {
+      id: '/_authed/w/$workspace/team/$key/'
+      path: '/team/$key'
+      fullPath: '/w/$workspace/team/$key/'
+      preLoaderRoute: typeof AuthedWWorkspaceTeamKeyIndexRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
+    '/_authed/w/$workspace/team/$key/settings': {
+      id: '/_authed/w/$workspace/team/$key/settings'
+      path: '/team/$key/settings'
+      fullPath: '/w/$workspace/team/$key/settings'
+      preLoaderRoute: typeof AuthedWWorkspaceTeamKeySettingsRouteImport
+      parentRoute: typeof AuthedWWorkspaceRoute
+    }
   }
 }
 
+interface AuthedWWorkspaceRouteChildren {
+  AuthedWWorkspaceInboxRoute: typeof AuthedWWorkspaceInboxRoute
+  AuthedWWorkspaceMembersRoute: typeof AuthedWWorkspaceMembersRoute
+  AuthedWWorkspaceIndexRoute: typeof AuthedWWorkspaceIndexRoute
+  AuthedWWorkspaceProjectProjectIdRoute: typeof AuthedWWorkspaceProjectProjectIdRoute
+  AuthedWWorkspaceTaskKeyRoute: typeof AuthedWWorkspaceTaskKeyRoute
+  AuthedWWorkspaceViewViewIdRoute: typeof AuthedWWorkspaceViewViewIdRoute
+  AuthedWWorkspaceTeamKeySettingsRoute: typeof AuthedWWorkspaceTeamKeySettingsRoute
+  AuthedWWorkspaceTeamKeyIndexRoute: typeof AuthedWWorkspaceTeamKeyIndexRoute
+}
+
+const AuthedWWorkspaceRouteChildren: AuthedWWorkspaceRouteChildren = {
+  AuthedWWorkspaceInboxRoute: AuthedWWorkspaceInboxRoute,
+  AuthedWWorkspaceMembersRoute: AuthedWWorkspaceMembersRoute,
+  AuthedWWorkspaceIndexRoute: AuthedWWorkspaceIndexRoute,
+  AuthedWWorkspaceProjectProjectIdRoute: AuthedWWorkspaceProjectProjectIdRoute,
+  AuthedWWorkspaceTaskKeyRoute: AuthedWWorkspaceTaskKeyRoute,
+  AuthedWWorkspaceViewViewIdRoute: AuthedWWorkspaceViewViewIdRoute,
+  AuthedWWorkspaceTeamKeySettingsRoute: AuthedWWorkspaceTeamKeySettingsRoute,
+  AuthedWWorkspaceTeamKeyIndexRoute: AuthedWWorkspaceTeamKeyIndexRoute,
+}
+
+const AuthedWWorkspaceRouteWithChildren =
+  AuthedWWorkspaceRoute._addFileChildren(AuthedWWorkspaceRouteChildren)
+
 interface AuthedRouteChildren {
+  AuthedOnboardingRoute: typeof AuthedOnboardingRoute
   AuthedProfileRoute: typeof AuthedProfileRoute
   AuthedTokensRoute: typeof AuthedTokensRoute
+  AuthedIndexRoute: typeof AuthedIndexRoute
+  AuthedWWorkspaceRoute: typeof AuthedWWorkspaceRouteWithChildren
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedOnboardingRoute: AuthedOnboardingRoute,
   AuthedProfileRoute: AuthedProfileRoute,
   AuthedTokensRoute: AuthedTokensRoute,
+  AuthedIndexRoute: AuthedIndexRoute,
+  AuthedWWorkspaceRoute: AuthedWWorkspaceRouteWithChildren,
 }
 
 const AuthedRouteWithChildren =
   AuthedRoute._addFileChildren(AuthedRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
   AuthedRoute: AuthedRouteWithChildren,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,

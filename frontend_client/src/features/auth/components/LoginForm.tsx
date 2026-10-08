@@ -39,7 +39,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       queryClient.removeQueries({ queryKey: SESSION_KEY })
       // Путь пришёл из адресной строки и уже проверен на «внутренний»;
       // статически сопоставить его с деревом маршрутов нельзя.
-      await navigate({ to: (redirectTo ?? '/profile') as '/profile' })
+      await navigate({ to: (redirectTo ?? '/') as '/' })
     },
     onError: (error) => {
       setFormError(applyServerError(error, setError, ['email', 'password']))

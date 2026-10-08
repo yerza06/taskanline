@@ -4,6 +4,7 @@ import { render, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 
 import { Providers } from '@/app/Providers'
+import { createAppQueryClient } from '@/app/query-client'
 import { createAppRouter } from '@/app/router'
 
 /**
@@ -12,10 +13,17 @@ import { createAppRouter } from '@/app/router'
  * Свой `QueryClient` на тест: общий кэш превращает соседние тесты в зависимые,
  * а `gcTime: 0` не даёт данным пережить размонтирование.
  */
-export async function renderApp({ path = '/' }: { path?: string } = {}) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false, gcTime: 0 } },
-  })
+export async function renderApp({
+  path = '/',
+  appCache = false,
+}: {
+  path?: string
+  /** Кэш как в приложении: данные без наблюдателей живут минуты, а не исчезают сразу. */
+  appCache?: boolean
+} = {}) {
+  const queryClient = appCache
+    ? createAppQueryClient()
+    : new QueryClient({ defaultOptions: { queries: { retry: false, gcTime: 0 } } })
   const router = createAppRouter(queryClient, createMemoryHistory({ initialEntries: [path] }))
 
   const result = render(

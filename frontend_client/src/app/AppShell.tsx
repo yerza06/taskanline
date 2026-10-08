@@ -11,10 +11,9 @@ const ITEM_CLASS =
   'flex w-full cursor-default items-center gap-2 rounded px-2 py-1.5 text-sm outline-none data-highlighted:bg-surface-hover'
 
 /**
- * Оболочка защищённой части приложения.
- *
- * Боковой навигации нет намеренно: до этапа 3 из неё некуда вести, а пустое
- * меню из трёх неработающих пунктов хуже его отсутствия.
+ * Оболочка защищённой части приложения: шапка с темой и меню пользователя.
+ * Боковое меню пространства — ниже, в `WorkspaceLayout`: у профиля и токенов
+ * его нет, они не принадлежат ни одному пространству.
  */
 export function AppShell({ children }: { children: ReactNode }) {
   const session = useSession()
@@ -26,7 +25,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         role="banner"
         className="border-border bg-surface flex h-14 shrink-0 items-center gap-3 border-b px-4"
       >
-        <Link to="/profile" className="font-display text-lg font-semibold tracking-tight">
+        <Link to="/" className="font-display text-lg font-semibold tracking-tight">
           TasKanLine
         </Link>
 

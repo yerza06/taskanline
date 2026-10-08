@@ -9,11 +9,11 @@ FRONT := frontend_client
 
 .DEFAULT_GOAL := help
 .PHONY: help install env run db-up db-down db-logs stack-up stack-down \
-        test test-back test-front lint format api-types \
+        test test-back test-front test-e2e lint format api-types \
         migrate migration migrate-down history
 
 help: ## Показать список команд
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2}'
 
 # --- Окружение ---------------------------------------------------------------
@@ -57,6 +57,9 @@ test-back: ## Тесты бэкенда. Аргументы: make test-back a="-
 
 test-front: ## Тесты веб-клиента. Аргументы: make test-front a="src/app"
 	cd $(FRONT) && bun run vitest run $(a)
+
+test-e2e: ## Сценарии А–В в браузере (Playwright, своя база taskanline_e2e; нужен make db-up)
+	cd $(FRONT) && bun run test:e2e
 
 lint: ## Линтеры и проверка типов на обеих половинах
 	uv run ruff check .

@@ -44,8 +44,9 @@ describe('экран регистрации', () => {
     await fill(user)
 
     // Регистрация логинит: отдельного входа после неё не требуется.
-    await screen.findByRole('heading', { name: 'Профиль' })
-    expect(router.state.location.pathname).toBe('/profile')
+    // Пространств ещё нет — корень ведёт создать первое.
+    await screen.findByRole('heading', { name: 'Новое пространство' })
+    expect(router.state.location.pathname).toBe('/onboarding')
   })
 
   it('сообщает о занятом email', async () => {

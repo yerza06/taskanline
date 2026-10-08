@@ -37,7 +37,8 @@ export function RegisterForm() {
       // Регистрация сразу открывает сессию — cookie уже стоят, входить незачем.
       markSessionActive()
       queryClient.removeQueries({ queryKey: SESSION_KEY })
-      await navigate({ to: '/profile' })
+      // Корень сам решит: пространства ещё нет — на создание первого.
+      await navigate({ to: '/' })
     },
     onError: (error) => {
       setFormError(applyServerError(error, setError, ['email', 'full_name', 'password']))

@@ -44,8 +44,9 @@ describe('экран входа', () => {
     await screen.findByRole('button', { name: 'Войти' })
     await fillAndSubmit(user)
 
-    await screen.findByRole('heading', { name: 'Профиль' })
-    expect(router.state.location.pathname).toBe('/profile')
+    // Пространств ещё нет — корень ведёт создать первое.
+    await screen.findByRole('heading', { name: 'Новое пространство' })
+    expect(router.state.location.pathname).toBe('/onboarding')
   })
 
   it('возвращает туда, куда человек шёл до входа', async () => {

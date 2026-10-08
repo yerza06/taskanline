@@ -7,11 +7,12 @@
 
 **Стек:** Python 3.13 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 16 · React 19 · TypeScript · Vite · Tailwind
 
-> Текущее состояние — закрыты **этапы 0–4, 7 и 8**: каркас, аутентификация и PAT-токены, рабочие
+> Текущее состояние — закрыты **этапы 0–5, 7 и 8**: каркас, аутентификация и PAT-токены, рабочие
 > пространства/команды/проекты с приглашениями по почте и правами трёх уровней, ядро задач
 > (ключи `ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления),
-> сохраняемые Views, Python-SDK, CLI `tkl` и MCP-сервер `tkl-mcp` для агентов. Дальше —
-> веб-клиент (этап 5). Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
+> сохраняемые Views, веб-клиент (задачи списком и доской, карточка, views, участники), Python-SDK,
+> CLI `tkl` и MCP-сервер `tkl-mcp` для агентов. Дальше — админ-панель (этап 6). Полная
+> документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
 
 ## Структура
 
@@ -223,7 +224,13 @@ uv run python -m app.admin grant --email ivan@example.com --role superadmin
 ## Веб-клиент
 
 React + TypeScript на Vite; маршрутизация TanStack Router (файловая, `src/routes/`), запросы —
-TanStack Query, формы — React Hook Form с Zod.
+TanStack Query, формы — React Hook Form с Zod, перетаскивание — dnd-kit, UI-состояние — Zustand.
+
+Что есть: пространства с боковым меню, задачи команды, проекта и «мои» — списком и доской
+(перетаскивание мышью и с клавиатуры), карточка задачи с Markdown, подзадачами, связями,
+обсуждением и историей, конструктор фильтров и сохранённые views, участники и приглашения на
+трёх уровнях, настройки команды, входящие. Горячие клавиши: `c` — новая задача, `/` — поиск,
+`g t` / `g i` / `g m` — команда, входящие, мои задачи, `?` — справка.
 
 **Типы API не пишутся руками.** `src/shared/api/schema.d.ts` генерируется из OpenAPI-схемы
 бэкенда командой `make api-types` и лежит в git; отдельная джоба CI пересобирает его и падает,
@@ -237,6 +244,7 @@ TanStack Query, формы — React Hook Form с Zod.
 cd frontend_client
 bun run dev        # http://localhost:5173, /api проксируется на localhost:8000
 bun run test       # Vitest с MSW: сеть в тестах закрыта
+bun run test:e2e   # Playwright: сценарии А–В против настоящего бэкенда (нужен make db-up)
 bun run lint && bun run typecheck && bun run build
 ```
 
@@ -261,6 +269,10 @@ CDN: **Inter** (`font-sans`) — весь интерфейс, **Raleway** (`font
 и заголовки экранов.
 
 ## Разработка
+
+Перед первым `test:e2e` — `bunx playwright install chromium`. Прогон поднимает свой бэкенд на
+базе `taskanline_e2e` (пересоздаётся каждый раз) и порту 8001, так что рабочей базе и серверу
+на 8000/5173 не мешает.
 
 Разработка ведётся по TDD и по этапам из
 [дорожной карты](docs/superpowers/specs/2026-09-16-taskanline-roadmap.md): каждый этап
