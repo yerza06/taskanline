@@ -667,6 +667,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Views
+         * @description Личные views, views видимых команд и — кроме гостей — общие для workspace.
+         */
+        get: operations["list_views_api_v1_views_get"];
+        put?: never;
+        /** Create View */
+        post: operations["create_view_api_v1_views_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/views/{view_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read View */
+        get: operations["read_view_api_v1_views__view_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete View */
+        delete: operations["delete_view_api_v1_views__view_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update View */
+        patch: operations["update_view_api_v1_views__view_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/views/{view_id}/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Run View
+         * @description Задачи view: фильтры, видимость читателя, сортировка и группировка view.
+         */
+        get: operations["run_view_api_v1_views__view_id__tasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/workspaces": {
         parameters: {
             query?: never;
@@ -905,6 +965,22 @@ export interface components {
         CommentUpdate: {
             /** Body */
             body: string;
+        };
+        /**
+         * FilterCondition
+         * @description Условие на одно поле. Допустимые пары поле × оператор — §4 модели данных.
+         */
+        FilterCondition: {
+            /**
+             * Op
+             * @description in, nin, eq, lt, lte, gt, gte, is_null, not_null, contains
+             */
+            op: string;
+            /**
+             * Value
+             * @description Список id (допустим @me), тип статуса, приоритет 0–4, дата или @today, @today±Nd, @start_of_week, строка, true/false
+             */
+            value?: unknown;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -1413,6 +1489,11 @@ export interface components {
         SessionResponse: {
             user: components["schemas"]["UserRead"];
         };
+        /**
+         * SortDirection
+         * @enum {string}
+         */
+        SortDirection: "asc" | "desc";
         /** StateBrief */
         StateBrief: {
             /** Color */
@@ -1542,6 +1623,28 @@ export interface components {
             team_id?: string | null;
             /** Title */
             title: string;
+        };
+        /**
+         * TaskGroup
+         * @description Группа результата view; без группировки — единственная с `key = null`.
+         */
+        TaskGroup: {
+            /**
+             * Count
+             * @description Сколько задач в группе всего, а не на этой странице
+             */
+            count: number;
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["TaskRead"][];
+            /**
+             * Key
+             * @description id, приоритет или дата; null — группа без значения
+             */
+            key: string | null;
+            /** Next Cursor */
+            next_cursor: string | null;
         };
         /** TaskLabelsUpdate */
         TaskLabelsUpdate: {
@@ -1938,6 +2041,155 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /** ViewCreate */
+        ViewCreate: {
+            /** Color */
+            color?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Filters */
+            filters?: {
+                [key: string]: components["schemas"]["FilterCondition"];
+            };
+            group_by?: components["schemas"]["ViewGroupBy"] | null;
+            /** Icon */
+            icon?: string | null;
+            /** @default list */
+            layout: components["schemas"]["ViewLayout"];
+            /** Name */
+            name: string;
+            /** Position */
+            position?: number | null;
+            scope: components["schemas"]["ViewScope"];
+            /** @default manual */
+            sort_by: components["schemas"]["ViewSortBy"];
+            /** @default asc */
+            sort_direction: components["schemas"]["SortDirection"];
+            /** Team Id */
+            team_id?: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * ViewGroupBy
+         * @enum {string}
+         */
+        ViewGroupBy: "state" | "assignee" | "priority" | "project" | "label" | "due_date";
+        /**
+         * ViewLayout
+         * @enum {string}
+         */
+        ViewLayout: "list" | "board";
+        /** ViewList */
+        ViewList: {
+            /** Items */
+            items: components["schemas"]["ViewRead"][];
+        };
+        /** ViewRead */
+        ViewRead: {
+            /**
+             * Can Edit
+             * @description Может ли текущий пользователь менять и удалять view
+             */
+            can_edit: boolean;
+            /** Color */
+            color: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Created By
+             * Format: uuid
+             */
+            created_by: string;
+            /** Description */
+            description: string | null;
+            /** Filters */
+            filters: {
+                [key: string]: unknown;
+            };
+            group_by: components["schemas"]["ViewGroupBy"] | null;
+            /** Icon */
+            icon: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            layout: components["schemas"]["ViewLayout"];
+            /** Name */
+            name: string;
+            /** Owner Id */
+            owner_id: string | null;
+            /** Position */
+            position: number;
+            scope: components["schemas"]["ViewScope"];
+            sort_by: components["schemas"]["ViewSortBy"];
+            sort_direction: components["schemas"]["SortDirection"];
+            /** Team Id */
+            team_id: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * ViewScope
+         * @description Кому принадлежит view: одному человеку, команде или всему workspace.
+         * @enum {string}
+         */
+        ViewScope: "user" | "team" | "workspace";
+        /**
+         * ViewSortBy
+         * @enum {string}
+         */
+        ViewSortBy: "manual" | "priority" | "due_date" | "created_at" | "updated_at" | "title";
+        /** ViewTasks */
+        ViewTasks: {
+            group_by: components["schemas"]["ViewGroupBy"] | null;
+            /** Groups */
+            groups: components["schemas"]["TaskGroup"][];
+            /**
+             * View Id
+             * Format: uuid
+             */
+            view_id: string;
+        };
+        /**
+         * ViewUpdate
+         * @description Scope, команда и владелец не меняются: это другой view, а не правка этого.
+         */
+        ViewUpdate: {
+            /** Color */
+            color?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Filters */
+            filters?: {
+                [key: string]: components["schemas"]["FilterCondition"];
+            } | null;
+            group_by?: components["schemas"]["ViewGroupBy"] | null;
+            /** Icon */
+            icon?: string | null;
+            layout?: components["schemas"]["ViewLayout"] | null;
+            /** Name */
+            name?: string | null;
+            /** Position */
+            position?: number | null;
+            sort_by?: components["schemas"]["ViewSortBy"] | null;
+            sort_direction?: components["schemas"]["SortDirection"] | null;
         };
         /** WorkspaceCreate */
         WorkspaceCreate: {
@@ -3853,6 +4105,204 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_views_api_v1_views_get: {
+        parameters: {
+            query: {
+                workspace_id: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_view_api_v1_views_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_view_api_v1_views__view_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                view_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_view_api_v1_views__view_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                view_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_view_api_v1_views__view_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                view_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_view_api_v1_views__view_id__tasks_get: {
+        parameters: {
+            query?: {
+                /** @description Ключ группы — листать одну колонку; none — группа без значения */
+                group?: string | null;
+                /** @description Задач на группу */
+                limit?: number;
+                cursor?: string | null;
+                /** @description Как в GET /tasks */
+                expand?: string | null;
+            };
+            header?: never;
+            path: {
+                view_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ViewTasks"];
                 };
             };
             /** @description Validation Error */
