@@ -97,7 +97,7 @@ jobs:
       - run: bun run build
 
   e2e:
-    name: Сценарии А–В в браузере
+    name: Сценарии А–В и Е в браузере
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -132,6 +132,9 @@ jobs:
       - run: uv sync --frozen
       - run: bun install --frozen-lockfile
         working-directory: frontend_client
+      # Сценарий Е поднимает и админ-панель — ей нужны свои зависимости.
+      - run: bun install --frozen-lockfile
+        working-directory: frontend_admin
       - run: bunx playwright install --with-deps chromium
         working-directory: frontend_client
       - run: bun run test:e2e

@@ -44,7 +44,9 @@ Obsidian-vault, git его игнорирует). **Читать перед лю
 `taskanline_sdk` и CLI `tkl` для агентов. Этап 8 «MCP-сервер» закрыт 2026-10-08: `tkl-mcp` для
 Claude, ChatGPT и других MCP-клиентов. Этап 5 «Веб-клиент» закрыт 2026-10-08: пространства,
 задачи списком и доской с перетаскиванием, карточка задачи, views, участники, настройки команды,
-уведомления; сценарии А–В проходят в Playwright. Следующий — этап 6 «Админ-панель». Каждый
+уведомления; сценарии А–В проходят в Playwright. Этап 6 «Админ-панель» закрыт 2026-10-08:
+раздел `/api/v1/admin/*`, приложение `frontend_admin/`, политика регистрации, журнал аудита;
+сценарий Е проходит в Playwright. Дальше — этап 9 «Redis» (по триггерам) и 10 «Интеграции». Каждый
 этап перед началом превращается в отдельный implementation plan через `superpowers:writing-plans`
 и кладётся в `docs/superpowers/plans/`; разработка по TDD — тест пишется первым и падает по нужной
 причине.
@@ -86,7 +88,10 @@ uv run ruff check . && uv run ruff format . && uv run mypy backend sdk cli mcp
 cd frontend_client && bun install
 bun run dev            # и так же: test, lint, typecheck, build
 bun run vitest run src/shared/theme/theme.test.ts     # один файл тестов
-bun run test:e2e       # Playwright: сценарии А–В против настоящего бэкенда (make db-up)
+bun run test:e2e       # Playwright: сценарии А–В и Е против настоящего бэкенда (make db-up)
+
+# Админ-панель — отдельное приложение, порт 5175, та же сессия
+cd frontend_admin && bun install && bun run dev    # и так же: test, lint, typecheck, build
 
 # Весь стек в контейнерах
 docker compose --env-file .env -f deploy/docker-compose.yml up -d --build
@@ -134,8 +139,12 @@ Python-часть — один uv-workspace, корневой `pyproject.toml` �
 `MAIL=/var/spool/mail/<user>` при входе), и `pydantic-settings` для вложенной модели отдаёт
 точному совпадению имени переменной приоритет перед разбором `__`-делимитера — под `MAIL__` тесты
 падали бы ещё до чтения `.env`. `MAILER__BACKEND` переключает `console` (письмо в лог, по
-умолчанию) и `smtp` (`aiosmtplib`). `INVITE__` — срок жизни приглашения и лимит на
-`POST /invitations`, независимо от `AUTH__` (там лимиты на вход и регистрацию).
+умолчанию) и `smtp` (`aiosmtplib`). `INVITE__` — лимит на `POST /invitations`, независимо от `AUTH__` (там
+лимиты на вход и регистрацию). Срок жизни приглашения — не переменная окружения, а
+`instance_settings.invitation_ttl_days`: его меняет администратор в админке.
+
+`SERVER__FORWARDED_ALLOW_IPS` — чьим `X-Forwarded-For` верит uvicorn. За nginx без него журнал
+аудита и лимиты видят адрес прокси, а не человека; в docker-compose стоит `*`.
 
 Параметры БД хранятся по частям (`DB__USER`, `DB__PASSWORD`, `DB__HOST`, `DB__PORT`, `DB__NAME`);
 строку собирает свойство `DatabaseSettings.url` с экранированием логина и пароля. Пароль и
@@ -175,6 +184,34 @@ compose; при занятом 5432 менять оба. `AUTH__COOKIE_SECURE` �
 ```bash
 uv run python -m app.admin grant --email ivan@example.com --role superadmin
 ```
+
+## Админ-панель
+
+Управление инстансом — отдельный контур: `backend/app/modules/admin/` и `instance/`, приложение
+`frontend_admin/`. Что важно не сломать:
+
+- **Доступ — `require_instance_role(...)` из `core/admin_access.py`**, а не `require_permission`.
+  Порядок отказов: 401 → `user` — 404 → PAT — `403 session_required` → роль —
+  `403 insufficient_role` → опасное действие без подтверждения — `403 reauth_required`.
+  Новый маршрут раздела — строка в `ROUTES` в `tests/test_admin.py`: без неё падает
+  `test_every_admin_route_is_covered`, а изоляция и запрет PAT проверяются по этому списку.
+- **Каждое изменение — запись `admin_audit_log` в той же транзакции** (`AdminService._record`,
+  без commit). Неудачное действие записи не оставляет. Правки и удаления журнала нет вовсе.
+- **Ни один админский ответ не несёт содержимого:** ни заголовков задач, ни описаний, ни
+  комментариев — только числа и названия пространств. `TestContent` ищет секретные строки во
+  всех ответах раздела.
+- **Инварианты:** хотя бы один действующий `superadmin` (`409 last_superadmin`, проверка под
+  `FOR UPDATE`); над ролью выше своей не действовать; удаление — анонимизация
+  (`users.deleted_at`), отказ, если человек — единственный владелец пространства.
+- **Политика регистрации — `instance_settings`.** Миграция ставит `invite_only`; пустой инстанс
+  открыт для первой регистрации. Тестовая фикстура `db_session` открывает регистрацию в
+  транзакции теста, e2e-бэкенд — командой `reset_db.py open` после миграций.
+- **Счётчики для админки — методы сервисов-владельцев** (`TaskService.counts_by_workspace` и
+  т. п.), а не запросы админского модуля в чужие таблицы.
+- **`frontend_admin` своего входа не имеет** и делит сессию с клиентом; опасный запрос через
+  `adminFetch` сам открывает окно пароля (`app/reauth.ts`) и повторяется. Токены темы —
+  `frontend_shared/tokens.css`, общий файл; `vite.config.ts` обоих приложений разрешает читать
+  `../frontend_shared`, Docker-образы собираются из корня репозитория.
 
 ## Права внутри workspace
 
