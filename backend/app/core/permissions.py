@@ -133,6 +133,9 @@ class Permission(StrEnum):
     # Изменить и удалить комментарий: видимость задачи и scope `write` здесь, а
     # «автор или admin» — в сервисе, роль одна на это правило не выражается.
     COMMENT_EDIT = "comment.edit"
+    # Создание командного и общего view; личный создаёт любой участник workspace.
+    VIEW_CREATE_TEAM = "view.create.team"
+    VIEW_CREATE_WORKSPACE = "view.create.workspace"
 
 
 MIN_ROLE: dict[Permission, EffectiveRole] = {
@@ -166,6 +169,8 @@ MIN_ROLE: dict[Permission, EffectiveRole] = {
     Permission.TASK_RESTORE: EffectiveRole.ADMIN,
     Permission.COMMENT_CREATE: EffectiveRole.MEMBER,
     Permission.COMMENT_EDIT: EffectiveRole.VIEWER,
+    Permission.VIEW_CREATE_TEAM: EffectiveRole.MEMBER,
+    Permission.VIEW_CREATE_WORKSPACE: EffectiveRole.ADMIN,
 }
 
 # Всё остальное меняет данные и требует scope `write`.

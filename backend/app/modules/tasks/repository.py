@@ -3,6 +3,7 @@
 from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from datetime import date
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -19,11 +20,13 @@ from sqlalchemy import (
     tuple_,
 )
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import aliased
 
-from app.core.enums import RelationType, StateType
+from app.core.enums import RelationType, StateType, ViewGroupBy
 from app.modules.labels.models import TaskLabel
 from app.modules.states.models import WorkflowState
 from app.modules.tasks.models import Task, TaskRelation, search_document
+from app.modules.tasks.ordering import SortSpec, group_expression
 
 
 @dataclass(frozen=True)
@@ -91,6 +94,82 @@ class TaskRepository:
         if after is not None:
             stmt = stmt.where(tuple_(Task.sort_order, Task.id) > tuple_(*map(literal, after)))
         return (await self._session.scalars(stmt)).all()
+
+    # --- Выполнение view ------------------------------------------------------------
+
+    def _view_base(
+        self,
+        workspace_id: UUID,
+        conditions: Sequence[ColumnElement[bool]],
+        group_by: ViewGroupBy | None,
+    ) -> Select[Any]:
+        stmt: Select[Any] = select(Task).where(
+            Task.workspace_id == workspace_id, Task.deleted_at.is_(None), *conditions
+        )
+        if group_by == ViewGroupBy.LABEL:
+            # Строка на каждую метку: задача с двумя метками — в двух группах.
+            stmt = stmt.outerjoin(TaskLabel, TaskLabel.task_id == Task.id)
+        return stmt
+
+    async def view_count(
+        self, workspace_id: UUID, conditions: Sequence[ColumnElement[bool]]
+    ) -> int:
+        stmt = self._view_base(workspace_id, conditions, None).with_only_columns(func.count())
+        return int(await self._session.scalar(stmt) or 0)
+
+    async def view_group_counts(
+        self,
+        workspace_id: UUID,
+        conditions: Sequence[ColumnElement[bool]],
+        group_by: ViewGroupBy,
+    ) -> list[tuple[Any, int]]:
+        key = group_expression(group_by)
+        stmt = (
+            self._view_base(workspace_id, conditions, group_by)
+            .with_only_columns(key, func.count(func.distinct(Task.id)))
+            .group_by(key)
+        )
+        return [(row[0], row[1]) for row in await self._session.execute(stmt)]
+
+    async def view_page(
+        self,
+        workspace_id: UUID,
+        conditions: Sequence[ColumnElement[bool]],
+        sort: SortSpec,
+        *,
+        group_by: ViewGroupBy | None,
+        only_group: tuple[Any] | None,
+        after: tuple[Any, UUID] | None,
+        limit: int,
+    ) -> list[tuple[Task, Any]]:
+        """Задачи с ключом группы, по `limit + 1` на группу.
+
+        Все группы сразу — одной выборкой с `row_number() OVER (PARTITION BY …)`; одна
+        группа (`only_group`) — обычная страница с курсором внутри неё.
+        """
+        base = self._view_base(workspace_id, conditions, group_by)
+        key = group_expression(group_by) if group_by else literal(None)
+        if only_group is not None or group_by is None:
+            stmt = base.add_columns(key.label("group_key"))
+            if only_group is not None:
+                (value,) = only_group
+                stmt = stmt.where(key.is_(None) if value is None else key == value)
+            if after is not None:
+                stmt = stmt.where(sort.after(after))
+            stmt = stmt.order_by(*sort.order_by()).limit(limit + 1)
+            return [(row[0], row[1]) for row in (await self._session.execute(stmt)).all()]
+
+        ranked = base.add_columns(
+            key.label("group_key"),
+            func.row_number().over(partition_by=key, order_by=sort.order_by()).label("position"),
+        ).subquery()
+        task = aliased(Task, ranked)
+        stmt = (
+            select(task, ranked.c.group_key)
+            .where(ranked.c.position <= limit + 1)
+            .order_by(ranked.c.position)
+        )
+        return [(row[0], row[1]) for row in (await self._session.execute(stmt)).all()]
 
     async def children(
         self, parent_id: UUID, workspace_id: UUID, visibility: ColumnElement[bool]

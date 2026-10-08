@@ -24,6 +24,7 @@ from app.modules.states import models as states_models  # noqa: F401
 from app.modules.tasks import models as tasks_models  # noqa: F401
 from app.modules.teams import models as teams_models  # noqa: F401
 from app.modules.users import models as users_models  # noqa: F401
+from app.modules.views import models as views_models  # noqa: F401
 from app.modules.workspaces import models as workspaces_models  # noqa: F401
 
 config = context.config

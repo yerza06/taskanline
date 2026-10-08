@@ -197,3 +197,13 @@ class TaskPage(Page[TaskRead]):
 
 class TaskList(BaseModel):
     items: list[TaskRead]
+
+
+class TaskGroup(BaseModel):
+    """Группа результата view; без группировки — единственная с `key = null`."""
+
+    key: str | None = Field(description="id, приоритет или дата; null — группа без значения")
+    count: int = Field(description="Сколько задач в группе всего, а не на этой странице")
+    items: list[TaskRead]
+    next_cursor: str | None
+    has_more: bool

@@ -17,6 +17,7 @@ from app.modules.states import router as states_router
 from app.modules.tasks import router as tasks_router
 from app.modules.teams import router as teams_router
 from app.modules.users import router as users_router
+from app.modules.views import router as views_router
 from app.modules.workspaces import router as workspaces_router
 
 api_router = APIRouter(prefix="/api/v1")
@@ -37,3 +38,4 @@ api_router.include_router(tasks_router.router)
 api_router.include_router(activities_router.router)
 api_router.include_router(comments_router.task_comments_router)
 api_router.include_router(comments_router.router)
+api_router.include_router(views_router.router)

@@ -11,6 +11,7 @@ from datetime import UTC, date, datetime
 from typing import Any
 from uuid import UUID
 
+from sqlalchemy import ColumnElement
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import (
@@ -19,6 +20,7 @@ from app.core.enums import (
     NotificationType,
     RelationType,
     StateType,
+    ViewGroupBy,
 )
 from app.core.errors import ApiError
 from app.core.fractional_index import key_between, keys_between
@@ -41,6 +43,12 @@ from app.modules.projects.service import ProjectService
 from app.modules.states.models import WorkflowState
 from app.modules.states.service import StateService
 from app.modules.tasks.models import Task, TaskRelation
+from app.modules.tasks.ordering import (
+    NO_PRIORITY_RANK,
+    SortSpec,
+    format_group_key,
+    parse_group_key,
+)
 from app.modules.tasks.repository import TaskFilters, TaskRepository
 from app.modules.tasks.schemas import (
     LabelBrief,
@@ -51,6 +59,7 @@ from app.modules.tasks.schemas import (
     StateBrief,
     TaskBrief,
     TaskCreate,
+    TaskGroup,
     TaskMove,
     TaskPage,
     TaskRead,
@@ -180,6 +189,109 @@ class TaskService:
             next_cursor=next_cursor,
             has_more=has_more,
         )
+
+    async def run_query(
+        self,
+        ctx: AccessContext,
+        conditions: Sequence[ColumnElement[bool]],
+        sort: SortSpec,
+        *,
+        group_by: ViewGroupBy | None,
+        group: str | None,
+        cursor: str | None,
+        limit: int,
+        expand: frozenset[str],
+    ) -> list[TaskGroup]:
+        """Выполнение view: условия фильтров плюс видимость читателя.
+
+        Без `group` — первые страницы всех групп; с `group` — страница одной группы
+        (колонки доски листаются независимо). Курсор имеет смысл только внутри группы.
+        """
+        if group is not None and group_by is None:
+            raise ApiError(400, "invalid_group", "View не группирует задачи", {"group": group})
+        if cursor is not None and group_by is not None and group is None:
+            raise ApiError(400, "invalid_cursor", "Курсор листает одну группу — укажите group")
+        scoped = [task_visibility(ctx.workspace_role, ctx.principal.user_id), *conditions]
+        only = (parse_group_key(group_by, group),) if group_by and group is not None else None
+        after = sort.decode(cursor) if cursor is not None else None
+
+        rows = await self._tasks.view_page(
+            ctx.workspace_id,
+            scoped,
+            sort,
+            group_by=group_by,
+            only_group=only,
+            after=after,
+            limit=limit,
+        )
+        if group_by is None:
+            counts: list[tuple[Any, int]] = [
+                (None, await self._tasks.view_count(ctx.workspace_id, scoped))
+            ]
+        else:
+            counts = await self._tasks.view_group_counts(ctx.workspace_id, scoped, group_by)
+            if only is not None:
+                # Пустая колонка доски — группа с нулём, а не пропажа группы.
+                counts = [(key, count) for key, count in counts if key == only[0]] or [(only[0], 0)]
+
+        grouped: dict[Any, list[Task]] = {key: [] for key, _ in counts}
+        for task, key in rows:
+            grouped.setdefault(key, []).append(task)
+        order = await self._group_order(ctx, group_by, [key for key, _ in counts])
+
+        result = []
+        for key, count in sorted(counts, key=lambda item: order(item[0])):
+            tasks = grouped.get(key, [])
+            page, has_more = tasks[:limit], len(tasks) > limit
+            result.append(
+                TaskGroup(
+                    key=format_group_key(key),
+                    count=count,
+                    items=await self.present(ctx, page, expand),
+                    next_cursor=sort.encode(page[-1]) if has_more else None,
+                    has_more=has_more,
+                )
+            )
+        return result
+
+    async def _group_order(
+        self, ctx: AccessContext, group_by: ViewGroupBy | None, keys: Sequence[Any]
+    ) -> Any:
+        """Функция-ключ порядка групп. Группа без значения — всегда последняя."""
+        present = [key for key in keys if key is not None]
+        rank: dict[Any, tuple[Any, ...]] = {}
+        if group_by == ViewGroupBy.PRIORITY:
+            rank = {key: (key or NO_PRIORITY_RANK,) for key in present}
+        elif group_by == ViewGroupBy.DUE_DATE:
+            rank = {key: (key,) for key in present}
+        elif group_by == ViewGroupBy.STATE:
+            types = list(StateType)
+            rank = {
+                state.id: (types.index(StateType(state.type)), state.position, state.name)
+                for state in await self._states.get_many(present)
+            }
+        elif group_by == ViewGroupBy.ASSIGNEE:
+            rank = {
+                user.id: (user.full_name.lower(), str(user.id))
+                for user in await UserService(self._session).get_many(present)
+            }
+        elif group_by == ViewGroupBy.PROJECT:
+            rank = {
+                project.id: (project.name.lower(), str(project.id))
+                for project in await self._projects.get_many(present, ctx.workspace_id)
+            }
+        elif group_by == ViewGroupBy.LABEL:
+            rank = {
+                label.id: (label.name.lower(), str(label.id))
+                for label in await self._labels.get_many(present, ctx.workspace_id)
+            }
+
+        def order(key: Any) -> tuple[int, tuple[Any, ...]]:
+            if key is None:
+                return (2, ())
+            return (0, rank[key]) if key in rank else (1, (str(key),))
+
+        return order
 
     async def subtasks(self, ctx: AccessContext, expand: frozenset[str]) -> list[TaskRead]:
         task = await self.get(ctx)

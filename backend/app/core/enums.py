@@ -133,3 +133,39 @@ class NotificationType(StrEnum):
     ASSIGNED = "assigned"
     COMMENTED = "commented"
     STATE_CHANGED = "state_changed"
+
+
+class ViewScope(StrEnum):
+    """Кому принадлежит view: одному человеку, команде или всему workspace."""
+
+    USER = "user"
+    TEAM = "team"
+    WORKSPACE = "workspace"
+
+
+class ViewGroupBy(StrEnum):
+    STATE = "state"
+    ASSIGNEE = "assignee"
+    PRIORITY = "priority"
+    PROJECT = "project"
+    LABEL = "label"
+    DUE_DATE = "due_date"
+
+
+class ViewSortBy(StrEnum):
+    MANUAL = "manual"
+    PRIORITY = "priority"
+    DUE_DATE = "due_date"
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+    TITLE = "title"
+
+
+class SortDirection(StrEnum):
+    ASC = "asc"
+    DESC = "desc"
+
+
+class ViewLayout(StrEnum):
+    LIST = "list"
+    BOARD = "board"
