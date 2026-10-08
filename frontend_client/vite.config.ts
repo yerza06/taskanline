@@ -24,6 +24,8 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // Токены темы лежат в ../frontend_shared — общие с админ-панелью.
+    fs: { allow: ['.', '../frontend_shared'] },
     // Бэкенд поднимается отдельно: uv run python -m app.main
     proxy: {
       // API_TARGET задаёт Playwright: его бэкенд живёт на своём порту и своей базе.

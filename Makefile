@@ -71,9 +71,10 @@ format: ## Отформатировать и починить автоиспра
 	uv run ruff check --fix .
 	uv run ruff format .
 
-api-types: ## Пересобрать типы веб-клиента из OpenAPI бэкенда
+api-types: ## Пересобрать типы обоих фронтендов из OpenAPI бэкенда
 	uv run python -m app.openapi > $(FRONT)/openapi.json
 	cd $(FRONT) && bun run generate:api
+	cd frontend_admin && bun run generate:api
 
 # --- Миграции ----------------------------------------------------------------
 

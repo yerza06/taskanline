@@ -1,0 +1,23 @@
+@import 'tailwindcss';
+/* Токены темы и шрифты — те же, что у веб-клиента: frontend_shared/tokens.css. */
+@import '../../frontend_shared/tokens.css';
+
+/* Тёмная тема — классом `dark` на <html>, его ставит скрипт в index.html. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--canvas);
+  color: var(--fg);
+}
+
+input[type='radio'],
+input[type='checkbox'] {
+  accent-color: var(--fg);
+}

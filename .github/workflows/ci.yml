@@ -79,6 +79,23 @@ jobs:
       - run: bun run test
       - run: bun run build
 
+  frontend_admin:
+    name: Админ-панель
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend_admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+
   e2e:
     name: Сценарии А–В в браузере
     runs-on: ubuntu-latest
@@ -147,9 +164,10 @@ jobs:
           bun-version: latest
       - run: uv sync --frozen
       - run: cd frontend_client && bun install --frozen-lockfile
+      - run: cd frontend_admin && bun install --frozen-lockfile
       - run: make api-types
       - name: Схема и типы разошлись
-        run: git diff --exit-code frontend_client/src/shared/api/schema.d.ts
+        run: git diff --exit-code frontend_client/src/shared/api/schema.d.ts frontend_admin/src/shared/api/schema.d.ts
 
   docker-build:
     name: Сборка образов
