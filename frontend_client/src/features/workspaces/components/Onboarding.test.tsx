@@ -10,7 +10,9 @@ describe('первое пространство', () => {
     const world = new World()
     world.workspaces = []
     server.use(...world.handlers())
-    const { user, router } = await renderApp({ path: '/onboarding' })
+    // С корня, как после регистрации: корень уже закэшировал пустой список пространств.
+    const { user, router } = await renderApp({ path: '/', appCache: true })
+    await waitFor(() => expect(router.state.location.pathname).toBe('/onboarding'))
 
     await user.type(await screen.findByLabelText('Название'), 'My Team')
     expect(screen.getByLabelText('Адрес')).toHaveValue('my-team')

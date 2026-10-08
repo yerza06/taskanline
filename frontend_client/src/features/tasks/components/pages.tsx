@@ -1,8 +1,10 @@
 import { Link, useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { Plus, Settings } from 'lucide-react'
+import { Plus, Settings, Users } from 'lucide-react'
+import { useState } from 'react'
 
 import { useUi } from '@/app/ui-store'
 import { canWrite, useSession } from '@/features/auth/api/session'
+import { MembersPanel } from '@/features/members/components/MembersPanel'
 import { useProject } from '@/features/projects/api/projects'
 import { TaskExplorer, type ExplorerDefaults } from '@/features/tasks/components/TaskExplorer'
 import { formatDate } from '@/features/tasks/model/groups'
@@ -10,6 +12,7 @@ import type { TaskSearch } from '@/features/tasks/model/search'
 import { useTeamByKey, useTeams } from '@/features/teams/api/teams'
 import { useCurrentWorkspace } from '@/features/workspaces/api/workspaces'
 import { Button } from '@/shared/ui/Button'
+import { Dialog } from '@/shared/ui/Dialog'
 
 /** Адресная строка — источник состояния среза; изменение — новый адрес. */
 function useTaskSearch(): [TaskSearch, (search: TaskSearch) => void] {
@@ -116,6 +119,7 @@ export function ProjectTasksPage() {
   const project = useProject(projectId)
   const team = useTeams(workspace?.id).data?.find((t) => t.id === project.data?.team_id)
   const [search, setSearch] = useTaskSearch()
+  const [members, setMembers] = useState(false)
   if (!workspace) return null
   if (project.isError) return <NotFound what="Проект" />
   if (!project.data) return null
@@ -131,7 +135,23 @@ export function ProjectTasksPage() {
       search={search}
       defaults={LIST_DEFAULTS}
       onSearch={setSearch}
-      actions={<NewTaskButton />}
+      actions={
+        <>
+          <NewTaskButton />
+          <Button variant="secondary" size="sm" onClick={() => setMembers(true)}>
+            <Users aria-hidden="true" className="size-4" />
+            Участники
+          </Button>
+          <Dialog
+            open={members}
+            onOpenChange={setMembers}
+            title={`Участники «${project.data.name}»`}
+            description="Приглашённый в проект видит только его задачи — ни других проектов, ни команды целиком."
+          >
+            <MembersPanel level="project" id={project.data.id} workspaceId={workspace.id} />
+          </Dialog>
+        </>
+      }
     />
   )
 }

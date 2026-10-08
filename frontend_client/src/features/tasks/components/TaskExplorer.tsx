@@ -66,8 +66,9 @@ export function TaskExplorer({
   const [saving, setSaving] = useState(false)
 
   const layout = search.layout ?? defaults.layout
-  // Доска — это колонки статусов: другой группировки у неё не бывает.
-  const group = layout === 'board' ? 'state' : (search.group ?? defaults.group)
+  // Колонки доски — группы; без группировки доска раскладывается по статусам.
+  const chosenGroup = search.group ?? defaults.group
+  const group = layout === 'board' && chosenGroup === 'none' ? 'state' : chosenGroup
   const sort = search.sort ?? defaults.sort
   const direction = search.dir ?? defaults.dir
   const filters = search.filters ?? defaults.filters
@@ -149,19 +150,17 @@ export function TaskExplorer({
             })}
           </div>
 
-          {layout === 'list' && (
-            <Select
-              aria-label="Группировка"
-              value={group}
-              onChange={(e) => set({ group: e.target.value as TaskSearch['group'] })}
-            >
-              {GROUP_OPTIONS.map((value) => (
-                <option key={value} value={value}>
-                  {GROUP_LABELS[value]}
-                </option>
-              ))}
-            </Select>
-          )}
+          <Select
+            aria-label="Группировка"
+            value={group}
+            onChange={(e) => set({ group: e.target.value as TaskSearch['group'] })}
+          >
+            {GROUP_OPTIONS.filter((value) => layout === 'list' || value !== 'none').map((value) => (
+              <option key={value} value={value}>
+                {GROUP_LABELS[value]}
+              </option>
+            ))}
+          </Select>
 
           <Select
             aria-label="Сортировка"
@@ -230,7 +229,7 @@ export function TaskExplorer({
         ) : layout === 'board' ? (
           <TaskBoard
             workspace={workspace.slug}
-            columns={boardColumns(groups, teamStates)}
+            columns={groupBy === 'state' ? boardColumns(groups, teamStates) : groups}
             title={titleOf}
             rules={rules}
             onMove={(request) => move.mutate(request)}

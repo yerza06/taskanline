@@ -8,7 +8,11 @@ import { workspacesQueryOptions } from '@/features/workspaces/api/workspaces'
  */
 export const Route = createFileRoute('/_authed/')({
   beforeLoad: async ({ context }) => {
-    const { items } = await context.queryClient.ensureQueryData(workspacesQueryOptions())
+    // Всегда свежий список: сюда приходят сразу после принятия приглашения.
+    const { items } = await context.queryClient.fetchQuery({
+      ...workspacesQueryOptions(),
+      staleTime: 0,
+    })
     const first = items[0]
     if (!first) {
       throw redirect({ to: '/onboarding' })

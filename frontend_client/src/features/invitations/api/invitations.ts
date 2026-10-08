@@ -33,7 +33,8 @@ export function useAcceptInvitation(token: string) {
       markSessionActive()
       // Членства изменились, а у нового человека сессия только что появилась.
       queryClient.removeQueries({ queryKey: SESSION_KEY })
-      await navigate({ to: '/profile' })
+      // Приглашение — это членство: корень приведёт в пространство, куда позвали.
+      await navigate({ to: '/' })
     },
   })
 }

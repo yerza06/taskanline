@@ -1,5 +1,5 @@
 import { useParams } from '@tanstack/react-router'
-import { useState, type ReactNode } from 'react'
+import { useId, useState, type ReactNode } from 'react'
 
 import { canWrite, useSession } from '@/features/auth/api/session'
 import { MembersPanel } from '@/features/members/components/MembersPanel'
@@ -31,10 +31,16 @@ import { Select } from '@/shared/ui/Select'
 const NEUTRAL = '#808080'
 
 function Card({ title, hint, children }: { title: string; hint: string; children: ReactNode }) {
+  const id = useId()
   return (
-    <section className="border-border bg-surface space-y-4 rounded-lg border p-4 sm:p-6">
+    <section
+      aria-labelledby={id}
+      className="border-border bg-surface space-y-4 rounded-lg border p-4 sm:p-6"
+    >
       <div>
-        <h2 className="text-base font-semibold">{title}</h2>
+        <h2 id={id} className="text-base font-semibold">
+          {title}
+        </h2>
         <p className="text-fg-muted text-sm">{hint}</p>
       </div>
       {children}

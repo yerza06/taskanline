@@ -26,13 +26,16 @@ export default defineConfig({
     port: 5173,
     // Бэкенд поднимается отдельно: uv run python -m app.main
     proxy: {
-      '/api': { target: 'http://localhost:8000', changeOrigin: true },
+      // API_TARGET задаёт Playwright: его бэкенд живёт на своём порту и своей базе.
+      '/api': { target: process.env.API_TARGET ?? 'http://localhost:8000', changeOrigin: true },
     },
   },
   test: {
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./src/test/setup.ts'],
+    // e2e/*.spec.ts — сценарии Playwright, Vitest их не запускает.
+    include: ['src/**/*.test.{ts,tsx}'],
     css: true,
   },
 })

@@ -9,8 +9,13 @@ import { WorkspaceLayout } from '@/features/workspaces/components/WorkspaceLayou
  */
 export const Route = createFileRoute('/_authed/w/$workspace')({
   beforeLoad: async ({ context, params }) => {
-    const { items } = await context.queryClient.ensureQueryData(workspacesQueryOptions())
-    if (!items.some((space) => space.slug === params.workspace)) {
+    const known = (items: { slug: string }[]) => items.some((s) => s.slug === params.workspace)
+    const cached = await context.queryClient.ensureQueryData(workspacesQueryOptions())
+    if (known(cached.items)) return
+    // Незнакомый slug — возможно, кэш отстал (только что приняли приглашение).
+    // Переспросить сервер, и лишь потом сказать «не найдено».
+    const fresh = await context.queryClient.fetchQuery({ ...workspacesQueryOptions(), staleTime: 0 })
+    if (!known(fresh.items)) {
       throw notFound()
     }
   },

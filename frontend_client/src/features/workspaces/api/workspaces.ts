@@ -44,7 +44,12 @@ export function useCreateWorkspace() {
   return useMutation({
     mutationFn: (values: WorkspaceCreate) =>
       apiFetch<WorkspaceRead>('/workspaces', { method: 'POST', json: values }),
-    onSuccess: async () => {
+    onSuccess: async (space) => {
+      // Сразу в кэш: следующий экран — само пространство, и его проверка в
+      // `beforeLoad` не должна увидеть список без него.
+      queryClient.setQueryData<{ items: WorkspaceRead[] }>(WORKSPACES_KEY, (old) => ({
+        items: [...(old?.items ?? []), space],
+      }))
       // Создатель становится владельцем: меняются и список, и членства в `/me`.
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: WORKSPACES_KEY }),

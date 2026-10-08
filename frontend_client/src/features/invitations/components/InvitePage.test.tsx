@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest'
 import { ME, anonymous, errorBody, invitation, signedIn, unauthorized } from '@/test/msw/handlers'
 import { server } from '@/test/msw/server'
 import { renderApp } from '@/test/render'
+import { world } from '@/test/msw/world'
 
 const TOKEN = 'abc123'
 const ACCEPT = `/api/v1/invitations/token/${TOKEN}/accept`
@@ -22,6 +23,7 @@ describe('страница приглашения', () => {
       ),
       ...anonymous(),
       ...invitation(),
+      ...world(),
       http.post(ACCEPT, async ({ request }) => {
         body = await request.json()
         accepted = true
@@ -36,8 +38,9 @@ describe('страница приглашения', () => {
     await user.type(screen.getByLabelText('Пароль'), 'correct horse battery')
     await user.click(screen.getByRole('button', { name: /принять/i }))
 
-    await screen.findByRole('heading', { name: 'Профиль' })
-    expect(router.state.location.pathname).toBe('/profile')
+    // Принятое приглашение — членство: корень ведёт в пространство, куда позвали.
+    await screen.findByRole('heading', { name: 'Мои задачи' })
+    expect(router.state.location.pathname).toBe('/w/acme')
     expect(body).toEqual({ full_name: 'Анна', password: 'correct horse battery' })
   })
 
@@ -46,6 +49,7 @@ describe('страница приглашения', () => {
     server.use(
       ...signedIn({ email: 'anna@example.com' }),
       ...invitation(),
+      ...world(),
       http.post(ACCEPT, () => {
         calls += 1
         return HttpResponse.json(ACCEPTED)
@@ -55,7 +59,7 @@ describe('страница приглашения', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Принять приглашение' }))
 
-    await screen.findByRole('heading', { name: 'Профиль' })
+    await screen.findByRole('heading', { name: 'Мои задачи' })
     expect(calls).toBe(1)
   })
 

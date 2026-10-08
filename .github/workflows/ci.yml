@@ -79,6 +79,52 @@ jobs:
       - run: bun run test
       - run: bun run build
 
+  e2e:
+    name: Сценарии А–В в браузере
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: taskanline
+          POSTGRES_PASSWORD: taskanline
+          POSTGRES_DB: taskanline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taskanline"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Базу taskanline_e2e пересоздаёт e2e/backend.sh перед каждым прогоном.
+      DB__USER: taskanline
+      DB__PASSWORD: taskanline
+      DB__HOST: localhost
+      DB__PORT: 5432
+      SECURITY__SECRET_KEY: ci-secret-key-at-least-32-characters-long
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: uv sync --frozen
+      - run: bun install --frozen-lockfile
+        working-directory: frontend_client
+      - run: bunx playwright install --with-deps chromium
+        working-directory: frontend_client
+      - run: bun run test:e2e
+        working-directory: frontend_client
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: frontend_client/test-results
+
   api-types:
     name: Типы клиента из OpenAPI
     runs-on: ubuntu-latest

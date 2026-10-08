@@ -71,7 +71,7 @@ export function ViewPage() {
                       {
                         filters: completeFilters(filters),
                         layout,
-                        group_by: layout === 'board' ? 'state' : group === 'none' ? null : group,
+                        group_by: group === 'none' ? (layout === 'board' ? 'state' : null) : group,
                         sort_by: search.sort ?? data.sort_by,
                         sort_direction: search.dir ?? data.sort_direction,
                       },
