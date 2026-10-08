@@ -51,7 +51,14 @@ export function tokens(items: TokenRead[]): HttpHandler[] {
 
 export function defaultHandlers(): HttpHandler[] {
   // Без пространств: человек только что зарегистрировался. Мир с задачами — `world()`.
-  return [...signedIn(), ...tokens([]), http.get('/api/v1/workspaces', () => HttpResponse.json({ items: [] }))]
+  return [
+    ...signedIn(),
+    ...tokens([]),
+    http.get('/api/v1/workspaces', () => HttpResponse.json({ items: [] })),
+    http.get('/api/v1/instance', () =>
+      HttpResponse.json({ instance_name: 'TasKanLine', registration_mode: 'open' }),
+    ),
+  ]
 }
 
 export const PREVIEW: InvitationPreview = {

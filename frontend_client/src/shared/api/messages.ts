@@ -46,6 +46,9 @@ const MESSAGES: Record<string, string> = {
   view_not_found: 'View не найден',
   not_comment_author: 'Менять можно только свои комментарии',
   invalid_filter: 'Фильтр не по правилам — проверьте условия',
+  registration_closed: 'Регистрация на этом сервере только по приглашению',
+  reset_token_invalid: 'Ссылка недействительна или устарела — запросите новую',
+  maintenance: 'Сервер на обслуживании, попробуйте позже',
 }
 
 function retryAfter(error: ApiError): number {
