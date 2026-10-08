@@ -1,6 +1,6 @@
 """Бизнес-правила рабочих пространств и участия в них."""
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -176,3 +176,48 @@ class WorkspaceService:
             raise ApiError(
                 409, "last_owner", "У рабочего пространства должен остаться хотя бы один владелец"
             )
+
+    # --- Для админ-панели: права проверяет вызывающий (`core/admin_access.py`) -------
+
+    async def all(self) -> Sequence[Workspace]:
+        return await self._workspaces.all()
+
+    async def count(self) -> int:
+        return await self._workspaces.count()
+
+    async def member_counts(self, ids: Collection[UUID]) -> dict[UUID, int]:
+        return await self._workspaces.member_counts(ids)
+
+    async def owners_of(self, ids: Collection[UUID]) -> dict[UUID, list[User]]:
+        return await self._workspaces.owners_of(ids)
+
+    async def members_of(self, workspace_id: UUID) -> list[Member]:
+        return await self._workspaces.list_members(workspace_id)
+
+    async def sole_owned_by(self, user_id: UUID) -> Sequence[Workspace]:
+        return await self._workspaces.sole_owned_by(user_id)
+
+    async def drop_user(self, user_id: UUID) -> None:
+        """Человек уходит из всех пространств — при удалении учётной записи. Без commit."""
+        await self._workspaces.delete_memberships_of(user_id)
+
+    async def delete_by_admin(self, workspace_id: UUID) -> None:
+        """Удаление со всем содержимым по решению администратора инстанса. Без commit."""
+        await self._workspaces.delete(workspace_id)
+
+    async def make_owner(self, workspace_id: UUID, user_id: UUID) -> list[UUID]:
+        """Аварийная передача владения: `user_id` становится владельцем (прежние
+        остаются). Возвращает прежних владельцев — их надо уведомить. Без commit."""
+        previous = [
+            user.id
+            for user in (await self._workspaces.owners_of([workspace_id])).get(workspace_id, [])
+        ]
+        member = await self._workspaces.add_member_if_absent(
+            workspace_id=workspace_id, user_id=user_id, role=WorkspaceRole.OWNER
+        )
+        member.role = WorkspaceRole.OWNER
+        await self._session.flush()
+        return [owner for owner in previous if owner != user_id]
+
+    async def get_many(self, ids: Collection[UUID]) -> Sequence[Workspace]:
+        return await self._workspaces.get_many(ids)

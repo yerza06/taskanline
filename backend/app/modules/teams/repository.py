@@ -1,6 +1,6 @@
 """Запросы к teams и team_members."""
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
 from sqlalchemy import and_, delete, exists, func, or_, select, update
@@ -143,3 +143,16 @@ class TeamRepository:
             select(TeamMember).where(TeamMember.user_id == user_id).order_by(TeamMember.created_at)
         )
         return (await self._session.scalars(stmt)).all()
+
+    async def counts_by_workspace(self, ids: Collection[UUID]) -> dict[UUID, int]:
+        if not ids:
+            return {}
+        rows = await self._session.execute(
+            select(Team.workspace_id, func.count())
+            .where(Team.workspace_id.in_(ids))
+            .group_by(Team.workspace_id)
+        )
+        return dict(rows.tuples().all())
+
+    async def count(self) -> int:
+        return int(await self._session.scalar(select(func.count()).select_from(Team)) or 0)

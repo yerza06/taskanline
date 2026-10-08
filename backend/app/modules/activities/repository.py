@@ -1,10 +1,10 @@
 """Запросы к activities. Только вставка и чтение: лента append-only."""
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import literal, select, tuple_
+from sqlalchemy import func, literal, select, tuple_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.modules.activities.models import Activity
@@ -38,3 +38,14 @@ class ActivityRepository:
                 tuple_(Activity.created_at, Activity.id) < tuple_(*map(literal, before))
             )
         return (await self._session.scalars(stmt)).all()
+
+    async def last_at_by_workspace(self, ids: Collection[UUID]) -> dict[UUID, datetime]:
+        """Время последнего изменения задач в каждом пространстве."""
+        if not ids:
+            return {}
+        rows = await self._session.execute(
+            select(Activity.workspace_id, func.max(Activity.created_at))
+            .where(Activity.workspace_id.in_(ids))
+            .group_by(Activity.workspace_id)
+        )
+        return dict(rows.tuples().all())

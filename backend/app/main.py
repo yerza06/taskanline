@@ -96,6 +96,9 @@ def create_app() -> FastAPI:
     # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
+    # Неудачные подтверждения паролем в админке подряд, по пользователю. В памяти, как
+    # и лимиты: Redis появится на этапе 9, а сбросу счётчика при перезапуске это не мешает.
+    app.state.reauth_failures = {}
     # Почтальон, как и лимитер, принадлежит приложению: тесты подменяют его своим.
     app.state.mailer = build_mailer(settings.mailer)
     app.add_middleware(CsrfMiddleware)

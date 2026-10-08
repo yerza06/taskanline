@@ -1,9 +1,9 @@
 """Запросы к workspaces и workspace_members. Про HTTP здесь ничего не известно."""
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, delete, exists, select
+from sqlalchemy import and_, delete, exists, func, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -130,3 +130,68 @@ class WorkspaceRepository:
             .order_by(WorkspaceMember.created_at)
         )
         return (await self._session.scalars(stmt)).all()
+
+    # --- Для админ-панели ---------------------------------------------------------
+
+    async def all(self) -> Sequence[Workspace]:
+        return (await self._session.scalars(select(Workspace))).all()
+
+    async def count(self) -> int:
+        return int(await self._session.scalar(select(func.count()).select_from(Workspace)) or 0)
+
+    async def member_counts(self, ids: Collection[UUID]) -> dict[UUID, int]:
+        if not ids:
+            return {}
+        rows = await self._session.execute(
+            select(WorkspaceMember.workspace_id, func.count())
+            .where(WorkspaceMember.workspace_id.in_(ids))
+            .group_by(WorkspaceMember.workspace_id)
+        )
+        return dict(rows.tuples().all())
+
+    async def owners_of(self, ids: Collection[UUID]) -> dict[UUID, list[User]]:
+        if not ids:
+            return {}
+        rows = await self._session.execute(
+            select(WorkspaceMember.workspace_id, User)
+            .join(User, User.id == WorkspaceMember.user_id)
+            .where(
+                WorkspaceMember.workspace_id.in_(ids),
+                WorkspaceMember.role == WorkspaceRole.OWNER,
+            )
+            .order_by(User.email)
+        )
+        result: dict[UUID, list[User]] = {}
+        for workspace_id, user in rows.tuples():
+            result.setdefault(workspace_id, []).append(user)
+        return result
+
+    async def sole_owned_by(self, user_id: UUID) -> Sequence[Workspace]:
+        """Пространства, где этот пользователь — единственный владелец."""
+        owners = (
+            select(WorkspaceMember.workspace_id)
+            .where(WorkspaceMember.role == WorkspaceRole.OWNER)
+            .group_by(WorkspaceMember.workspace_id)
+            .having(func.count() == 1)
+        )
+        stmt = (
+            select(Workspace)
+            .join(WorkspaceMember, WorkspaceMember.workspace_id == Workspace.id)
+            .where(
+                WorkspaceMember.user_id == user_id,
+                WorkspaceMember.role == WorkspaceRole.OWNER,
+                Workspace.id.in_(owners),
+            )
+        )
+        return (await self._session.scalars(stmt)).all()
+
+    async def delete_memberships_of(self, user_id: UUID) -> None:
+        """Все членства человека; командные и проектные уходят каскадом."""
+        await self._session.execute(
+            delete(WorkspaceMember).where(WorkspaceMember.user_id == user_id)
+        )
+
+    async def get_many(self, ids: Collection[UUID]) -> Sequence[Workspace]:
+        if not ids:
+            return []
+        return (await self._session.scalars(select(Workspace).where(Workspace.id.in_(ids)))).all()

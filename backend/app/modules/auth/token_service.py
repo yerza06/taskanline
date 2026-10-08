@@ -64,3 +64,19 @@ class ApiTokenService:
 
         await self._tokens.revoke(token, at=datetime.now(UTC))
         await self._session.commit()
+
+    # --- Для админ-панели: без commit, права проверяет вызывающий -----------------
+
+    async def list_all(self, user_id: UUID) -> Sequence[ApiToken]:
+        return await self._tokens.list_all(user_id)
+
+    async def revoke_all(self, user_id: UUID) -> None:
+        await self._tokens.revoke_all_for_user(user_id, at=datetime.now(UTC))
+
+    async def revoke_for(self, token_id: UUID, user_id: UUID) -> ApiToken:
+        token = await self._tokens.get_owned(token_id, user_id)
+        if token is None:
+            raise ApiError(404, "token_not_found", "Токен не найден")
+        if token.revoked_at is None:
+            await self._tokens.revoke(token, at=datetime.now(UTC))
+        return token

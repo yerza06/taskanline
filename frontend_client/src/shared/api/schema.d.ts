@@ -4,6 +4,310 @@
  */
 
 export interface paths {
+    "/api/v1/admin/audit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit */
+        get: operations["audit_api_v1_admin_audit_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/reauth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reauth
+         * @description Повторный ввод пароля: открывает окно опасных действий на 15 минут.
+         */
+        post: operations["reauth_api_v1_admin_reauth_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read Session
+         * @description Кто вошёл, с какой ролью и до какого момента подтверждён паролем.
+         */
+        get: operations["read_session_api_v1_admin_session_get"];
+        put?: never;
+        /**
+         * Open Session
+         * @description Вход в админку: приложение вызывает его при открытии — `admin_login` в журнал.
+         */
+        post: operations["open_session_api_v1_admin_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Settings */
+        get: operations["read_settings_api_v1_admin_settings_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Settings */
+        patch: operations["update_settings_api_v1_admin_settings_patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stats */
+        get: operations["stats_api_v1_admin_stats_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Users */
+        get: operations["list_users_api_v1_admin_users_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Read User
+         * @description Профиль, членства, токены агентов и последние 20 входов.
+         */
+        get: operations["read_user_api_v1_admin_users__user_id__get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete User
+         * @description Анонимизация: задачи и комментарии остаются, автор становится заглушкой.
+         */
+        delete: operations["delete_user_api_v1_admin_users__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/block": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Block User
+         * @description Блокировка сразу гасит все сессии и все токены агентов пользователя.
+         */
+        post: operations["block_user_api_v1_admin_users__user_id__block_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description Письмо со ссылкой на смену пароля. Администратор пароль не видит и не задаёт.
+         */
+        post: operations["reset_password_api_v1_admin_users__user_id__reset_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change Role */
+        patch: operations["change_role_api_v1_admin_users__user_id__role_patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/tokens/{token_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke User Token */
+        delete: operations["revoke_user_token_api_v1_admin_users__user_id__tokens__token_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/users/{user_id}/unblock": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Unblock User */
+        post: operations["unblock_user_api_v1_admin_users__user_id__unblock_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/workspaces": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Workspaces */
+        get: operations["list_workspaces_api_v1_admin_workspaces_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/workspaces/{workspace_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Workspace */
+        get: operations["read_workspace_api_v1_admin_workspaces__workspace_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Workspace */
+        delete: operations["delete_workspace_api_v1_admin_workspaces__workspace_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/workspaces/{workspace_id}/grant-ownership": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant Ownership
+         * @description Назначить себя владельцем — с записью в журнал и уведомлением владельцам.
+         */
+        post: operations["grant_ownership_api_v1_admin_workspaces__workspace_id__grant_ownership_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/forgot-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Forgot Password
+         * @description Письмо со ссылкой на смену пароля. Ответ одинаковый, есть такой адрес или нет:
+         *     по нему нельзя перебрать, кто зарегистрирован на инстансе.
+         */
+        post: operations["forgot_password_api_v1_auth_forgot_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -75,6 +379,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Reset Password
+         * @description Новый пароль по ссылке из письма: прежние сессии гаснут, открывается новая.
+         */
+        post: operations["reset_password_api_v1_auth_reset_password_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/comments/{comment_id}": {
         parameters: {
             query?: never;
@@ -91,6 +415,26 @@ export interface paths {
         head?: never;
         /** Update Comment */
         patch: operations["update_comment_api_v1_comments__comment_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/instance": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Instance Info
+         * @description Название инстанса и режим регистрации — экран регистрации показывает их заранее.
+         */
+        get: operations["instance_info_api_v1_instance_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/invitations": {
@@ -922,6 +1266,288 @@ export interface components {
          * @enum {string}
          */
         ActivityType: "task_created" | "title_changed" | "description_changed" | "state_changed" | "assignee_changed" | "priority_changed" | "due_date_changed" | "project_changed" | "parent_changed" | "label_added" | "label_removed" | "relation_added" | "relation_removed" | "commented" | "task_moved" | "task_deleted" | "task_restored";
+        /** AdminLogin */
+        AdminLogin: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Ip */
+            ip: string | null;
+            kind: components["schemas"]["LoginKind"];
+            /** User Agent */
+            user_agent: string | null;
+        };
+        /** AdminMembership */
+        AdminMembership: {
+            role: components["schemas"]["WorkspaceRole"];
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+            /** Workspace Name */
+            workspace_name: string;
+            /** Workspace Slug */
+            workspace_slug: string;
+        };
+        /** AdminOwner */
+        AdminOwner: {
+            /** Email */
+            email: string;
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** AdminSession */
+        AdminSession: {
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Reauth Until
+             * @description До какого момента действует подтверждение паролем; null — не подтверждено
+             */
+            reauth_until: string | null;
+            role: components["schemas"]["InstanceRole"];
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** AdminToken */
+        AdminToken: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Expires At */
+            expires_at: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Used At */
+            last_used_at: string | null;
+            /** Name */
+            name: string;
+            /** Prefix */
+            prefix: string;
+            /** Revoked At */
+            revoked_at: string | null;
+            scope: components["schemas"]["TokenScope"];
+        };
+        /** AdminUserDetail */
+        AdminUserDetail: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /**
+             * Logins
+             * @description Последние 20 входов
+             */
+            logins: components["schemas"]["AdminLogin"][];
+            /** Memberships */
+            memberships: components["schemas"]["AdminMembership"][];
+            role: components["schemas"]["InstanceRole"];
+            /**
+             * Status
+             * @description active, blocked или deleted
+             */
+            status: string;
+            /** Tokens */
+            tokens: components["schemas"]["AdminToken"][];
+        };
+        /** AdminUserPage */
+        AdminUserPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["AdminUserRow"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** AdminUserRow */
+        AdminUserRow: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            role: components["schemas"]["InstanceRole"];
+            /**
+             * Status
+             * @description active, blocked или deleted
+             */
+            status: string;
+        };
+        /** AdminWorkspaceDetail */
+        AdminWorkspaceDetail: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Activity At */
+            last_activity_at: string | null;
+            /** Member List */
+            member_list: components["schemas"]["AdminWorkspaceMember"][];
+            /** Members */
+            members: number;
+            /** Name */
+            name: string;
+            /** Owners */
+            owners: components["schemas"]["AdminOwner"][];
+            /** Slug */
+            slug: string;
+            /** Tasks */
+            tasks: number;
+            /** Teams */
+            teams: number;
+        };
+        /** AdminWorkspaceMember */
+        AdminWorkspaceMember: {
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            role: components["schemas"]["WorkspaceRole"];
+            /**
+             * User Id
+             * Format: uuid
+             */
+            user_id: string;
+        };
+        /** AdminWorkspacePage */
+        AdminWorkspacePage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["AdminWorkspaceRow"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** AdminWorkspaceRow */
+        AdminWorkspaceRow: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Last Activity At */
+            last_activity_at: string | null;
+            /** Members */
+            members: number;
+            /** Name */
+            name: string;
+            /** Owners */
+            owners: components["schemas"]["AdminOwner"][];
+            /** Slug */
+            slug: string;
+            /** Tasks */
+            tasks: number;
+            /** Teams */
+            teams: number;
+        };
+        /**
+         * AuditAction
+         * @description Что сделал администратор. Журнал — `admin_audit_log`.
+         * @enum {string}
+         */
+        AuditAction: "admin_login" | "reauth_failed" | "user_blocked" | "user_unblocked" | "user_role_changed" | "user_deleted" | "password_reset_sent" | "token_revoked" | "workspace_deleted" | "workspace_ownership_granted" | "settings_changed";
+        /** AuditActor */
+        AuditActor: {
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
+        /** AuditEntry */
+        AuditEntry: {
+            action: components["schemas"]["AuditAction"];
+            actor: components["schemas"]["AuditActor"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Ip */
+            ip: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Target Id */
+            target_id: string | null;
+            target_type: components["schemas"]["AuditTarget"] | null;
+            /** User Agent */
+            user_agent: string | null;
+        };
+        /** AuditPage */
+        AuditPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["AuditEntry"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /**
+         * AuditTarget
+         * @enum {string}
+         */
+        AuditTarget: "user" | "workspace" | "settings";
         /**
          * AuthMethod
          * @description Чем доказана личность: cookie-сессией человека или токеном агента.
@@ -1004,6 +1630,14 @@ export interface components {
              */
             value?: unknown;
         };
+        /** ForgotPasswordRequest */
+        ForgotPasswordRequest: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -1023,6 +1657,15 @@ export interface components {
             status: "ok" | "degraded";
             /** Version */
             version: string;
+        };
+        /**
+         * InstanceInfo
+         * @description То, что видно и анониму: название и можно ли зарегистрироваться самому.
+         */
+        InstanceInfo: {
+            /** Instance Name */
+            instance_name: string;
+            registration_mode: components["schemas"]["RegistrationMode"];
         };
         /**
          * InstanceRole
@@ -1214,6 +1857,12 @@ export interface components {
             /** Name */
             name?: string | null;
         };
+        /**
+         * LoginKind
+         * @description Как человек получил сессию — для журнала входов в карточке пользователя.
+         * @enum {string}
+         */
+        LoginKind: "password" | "registration" | "invitation" | "password_reset";
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -1310,7 +1959,7 @@ export interface components {
          * @description Повод уведомления. На этапе 3 создаются только `mentioned` и `assigned`.
          * @enum {string}
          */
-        NotificationType: "mentioned" | "assigned" | "commented" | "state_changed";
+        NotificationType: "mentioned" | "assigned" | "commented" | "state_changed" | "ownership_granted";
         /** OwnershipTransfer */
         OwnershipTransfer: {
             /**
@@ -1465,6 +2114,11 @@ export interface components {
             /** Groups */
             groups: components["schemas"]["TaskGroup"][];
         };
+        /** ReauthRequest */
+        ReauthRequest: {
+            /** Password */
+            password: string;
+        };
         /** RegisterRequest */
         RegisterRequest: {
             /**
@@ -1477,6 +2131,12 @@ export interface components {
             /** Password */
             password: string;
         };
+        /**
+         * RegistrationMode
+         * @description Кто может зарегистрироваться сам, без приглашения.
+         * @enum {string}
+         */
+        RegistrationMode: "invite_only" | "open" | "domain_allowlist";
         /** RelationCreate */
         RelationCreate: {
             /**
@@ -1506,6 +2166,17 @@ export interface components {
              */
             type: "blocks" | "blocked_by" | "relates_to" | "duplicates" | "duplicated_by";
         };
+        /** ResetPasswordRequest */
+        ResetPasswordRequest: {
+            /** Password */
+            password: string;
+            /** Token */
+            token: string;
+        };
+        /** RoleChange */
+        RoleChange: {
+            role: components["schemas"]["InstanceRole"];
+        };
         /**
          * SessionResponse
          * @description Ответ регистрации, входа и обновления сессии.
@@ -1516,6 +2187,41 @@ export interface components {
          */
         SessionResponse: {
             user: components["schemas"]["UserRead"];
+        };
+        /** SettingsRead */
+        SettingsRead: {
+            /** Allowed Email Domains */
+            allowed_email_domains: string[];
+            /** Instance Name */
+            instance_name: string;
+            /** Invitation Ttl Days */
+            invitation_ttl_days: number;
+            /** Maintenance Mode */
+            maintenance_mode: boolean;
+            registration_mode: components["schemas"]["RegistrationMode"];
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Updated By */
+            updated_by: string | null;
+        };
+        /**
+         * SettingsUpdate
+         * @description Переданное поле меняется, отсутствующее — нет. Явный null запрещён: у каждого
+         *     параметра есть значение.
+         */
+        SettingsUpdate: {
+            /** Allowed Email Domains */
+            allowed_email_domains?: string[] | null;
+            /** Instance Name */
+            instance_name?: string | null;
+            /** Invitation Ttl Days */
+            invitation_ttl_days?: number | null;
+            /** Maintenance Mode */
+            maintenance_mode?: boolean | null;
+            registration_mode?: components["schemas"]["RegistrationMode"] | null;
         };
         /**
          * SortDirection
@@ -1606,6 +2312,28 @@ export interface components {
             name?: string | null;
             /** Position */
             position?: number | null;
+        };
+        /** Stats */
+        Stats: {
+            /**
+             * Migration
+             * @description Текущая ревизия базы
+             */
+            migration: string | null;
+            /**
+             * Migration Head
+             * @description Последняя ревизия в коде
+             */
+            migration_head: string | null;
+            /** Tasks */
+            tasks: number;
+            /** Teams */
+            teams: number;
+            users: components["schemas"]["UserCounts"];
+            /** Version */
+            version: string;
+            /** Workspaces */
+            workspaces: number;
         };
         /** TaskBrief */
         TaskBrief: {
@@ -2021,6 +2749,17 @@ export interface components {
              */
             id: string;
         };
+        /** UserCounts */
+        UserCounts: {
+            /** Active */
+            active: number;
+            /** Blocked */
+            blocked: number;
+            /** Deleted */
+            deleted: number;
+            /** Total */
+            total: number;
+        };
         /**
          * UserRead
          * @description Публичный вид пользователя. Хеша пароля здесь нет и быть не может.
@@ -2355,6 +3094,599 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    audit_api_v1_admin_audit_get: {
+        parameters: {
+            query?: {
+                actor_id?: string | null;
+                action?: components["schemas"]["AuditAction"] | null;
+                target_type?: components["schemas"]["AuditTarget"] | null;
+                target_id?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuditPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reauth_api_v1_admin_reauth_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReauthRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSession"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_session_api_v1_admin_session_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSession"];
+                };
+            };
+        };
+    };
+    open_session_api_v1_admin_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSession"];
+                };
+            };
+        };
+    };
+    read_settings_api_v1_admin_settings_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsRead"];
+                };
+            };
+        };
+    };
+    update_settings_api_v1_admin_settings_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SettingsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SettingsRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stats_api_v1_admin_stats_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Stats"];
+                };
+            };
+        };
+    };
+    list_users_api_v1_admin_users_get: {
+        parameters: {
+            query?: {
+                /** @description Email или имя */
+                q?: string | null;
+                role?: components["schemas"]["InstanceRole"] | null;
+                status?: string | null;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_user_api_v1_admin_users__user_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_api_v1_admin_users__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    block_user_api_v1_admin_users__user_id__block_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_password_api_v1_admin_users__user_id__reset_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    change_role_api_v1_admin_users__user_id__role_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleChange"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_user_token_api_v1_admin_users__user_id__tokens__token_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+                token_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    unblock_user_api_v1_admin_users__user_id__unblock_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserRow"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_workspaces_api_v1_admin_workspaces_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                /** @description created, name, members, tasks, activity (давние первыми) */
+                sort?: string;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWorkspacePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_workspace_api_v1_admin_workspaces__workspace_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWorkspaceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_workspace_api_v1_admin_workspaces__workspace_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_ownership_api_v1_admin_workspaces__workspace_id__grant_ownership_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWorkspaceDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    forgot_password_api_v1_auth_forgot_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ForgotPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     login_api_v1_auth_login_post: {
         parameters: {
             query?: never;
@@ -2459,6 +3791,39 @@ export interface operations {
             };
         };
     };
+    reset_password_api_v1_auth_reset_password_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SessionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     delete_comment_api_v1_comments__comment_id__delete: {
         parameters: {
             query?: never;
@@ -2519,6 +3884,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    instance_info_api_v1_instance_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InstanceInfo"];
                 };
             };
         };

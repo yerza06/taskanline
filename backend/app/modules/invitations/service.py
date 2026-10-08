@@ -15,6 +15,7 @@ from app.core.config import get_settings
 from app.core.enums import (
     InvitationScope,
     InvitationStatus,
+    LoginKind,
     ProjectRole,
     TeamRole,
     WorkspaceRole,
@@ -279,6 +280,7 @@ class InvitationService:
             ),
             user_agent=user_agent,
             ip=ip,
+            kind=LoginKind.INVITATION,
         )
 
     async def _grant(self, invitation: Invitation, user_id: UUID) -> None:
