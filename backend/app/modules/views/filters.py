@@ -36,6 +36,7 @@ class FilterField(StrEnum):
     ASSIGNEE_ID = "assignee_id"
     CREATOR_ID = "creator_id"
     LABEL_ID = "label_id"
+    PARENT_ID = "parent_id"
     PRIORITY = "priority"
     DUE_DATE = "due_date"
     CREATED_AT = "created_at"
@@ -67,6 +68,7 @@ ID_FIELDS = frozenset(
         FilterField.ASSIGNEE_ID,
         FilterField.CREATOR_ID,
         FilterField.LABEL_ID,
+        FilterField.PARENT_ID,
     }
 )
 DATE_FIELDS = frozenset(
@@ -75,12 +77,17 @@ DATE_FIELDS = frozenset(
 COMPARISONS = frozenset({FilterOp.EQ, FilterOp.LT, FilterOp.LTE, FilterOp.GT, FilterOp.GTE})
 # `@me` осмыслен только там, где значение — человек.
 PERSON_FIELDS = frozenset({FilterField.ASSIGNEE_ID, FilterField.CREATOR_ID})
+# Необязательные поля: «не равно X» включает задачи, где значения нет вовсе, а пустоту
+# можно спросить и напрямую. `parent_id` пустоту спрашивает через `has_parent`.
+NULLABLE_FIELDS = frozenset({FilterField.PROJECT_ID, FilterField.ASSIGNEE_ID})
+EMPTINESS = frozenset({FilterOp.IS_NULL, FilterOp.NOT_NULL})
 
 ALLOWED_OPS: dict[FilterField, frozenset[FilterOp]] = {
     **{
         field: frozenset({FilterOp.IN, FilterOp.NIN})
         for field in ID_FIELDS | {FilterField.STATE_TYPE}
     },
+    **{field: frozenset({FilterOp.IN, FilterOp.NIN}) | EMPTINESS for field in NULLABLE_FIELDS},
     FilterField.PRIORITY: COMPARISONS | {FilterOp.IN},
     **{field: COMPARISONS | {FilterOp.IS_NULL, FilterOp.NOT_NULL} for field in DATE_FIELDS},
     FilterField.TITLE: frozenset({FilterOp.CONTAINS}),
@@ -144,6 +151,10 @@ def parse_filters(raw: Any) -> list[Condition]:
 
 
 def _value(field: FilterField, op: FilterOp, value: Any) -> Any:
+    if op in EMPTINESS:
+        if value is not None:
+            raise FilterError(field, f"оператор {op} не принимает значения")
+        return None
     if field in ID_FIELDS:
         return [_id(field, item) for item in _list(field, value)]
     if field == FilterField.STATE_TYPE:
@@ -156,10 +167,6 @@ def _value(field: FilterField, op: FilterOp, value: Any) -> Any:
             return [_priority(field, item) for item in _list(field, value)]
         return _priority(field, value)
     if field in DATE_FIELDS:
-        if op in (FilterOp.IS_NULL, FilterOp.NOT_NULL):
-            if value is not None:
-                raise FilterError(field, f"оператор {op} не принимает значения")
-            return None
         if not isinstance(value, str):
             raise FilterError(field, "ожидалась дата YYYY-MM-DD или @today±Nd, @start_of_week")
         resolve_date(value, date.today(), field=field)  # проверка формы; дата — при выполнении
@@ -227,13 +234,13 @@ _COLUMNS = {
     FilterField.STATE_ID: Task.state_id,
     FilterField.ASSIGNEE_ID: Task.assignee_id,
     FilterField.CREATOR_ID: Task.creator_id,
+    FilterField.PARENT_ID: Task.parent_id,
     FilterField.DUE_DATE: Task.due_date,
     FilterField.CREATED_AT: Task.created_at,
     FilterField.UPDATED_AT: Task.updated_at,
     FilterField.COMPLETED_AT: Task.completed_at,
 }
-# Необязательные поля: «не равно X» включает задачи, где значения нет вовсе.
-_NULLABLE = frozenset({FilterField.PROJECT_ID, FilterField.ASSIGNEE_ID})
+_NOT_IN_INCLUDES_EMPTY = NULLABLE_FIELDS | {FilterField.PARENT_ID}
 
 
 def _translate(condition: Condition, ctx: FilterContext) -> ColumnElement[bool]:
@@ -247,12 +254,16 @@ def _translate(condition: Condition, ctx: FilterContext) -> ColumnElement[bool]:
         states = select(WorkflowState.id).where(WorkflowState.type.in_(value))
         return Task.state_id.in_(states) if op == FilterOp.IN else Task.state_id.not_in(states)
 
+    if op in EMPTINESS:
+        column = _COLUMNS[field]
+        return column.is_(None) if op == FilterOp.IS_NULL else column.is_not(None)
+
     if field in ID_FIELDS:
         column = _COLUMNS[field]
         ids = [ctx.user_id if item == ME else item for item in value]
         if op == FilterOp.IN:
             return column.in_(ids)
-        if field in _NULLABLE:
+        if field in _NOT_IN_INCLUDES_EMPTY:
             return or_(column.is_(None), column.not_in(ids))
         return column.not_in(ids)
 
@@ -267,10 +278,6 @@ def _translate(condition: Condition, ctx: FilterContext) -> ColumnElement[bool]:
 
     if field in DATE_FIELDS:
         column = _COLUMNS[field]
-        if op == FilterOp.IS_NULL:
-            return column.is_(None)
-        if op == FilterOp.NOT_NULL:
-            return column.is_not(None)
         day = resolve_date(value, ctx.today, field=field)
         if field == FilterField.DUE_DATE:
             return _compare(column, op, day)

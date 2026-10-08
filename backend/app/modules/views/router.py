@@ -11,7 +11,15 @@ from app.core.pagination import DEFAULT_LIMIT, MAX_LIMIT
 from app.core.principal import CurrentPrincipal
 from app.modules.tasks.service import parse_expand
 from app.modules.views.models import View
-from app.modules.views.schemas import ViewCreate, ViewList, ViewRead, ViewTasks, ViewUpdate
+from app.modules.views.schemas import (
+    QueryTasks,
+    ViewCreate,
+    ViewList,
+    ViewQuery,
+    ViewRead,
+    ViewTasks,
+    ViewUpdate,
+)
 from app.modules.views.service import ViewService
 
 router = APIRouter(prefix="/views", tags=["views"])
@@ -70,6 +78,21 @@ async def create_view(
     payload: ViewCreate, principal: CurrentPrincipal, service: Service
 ) -> ViewRead:
     return _read(*await service.create(principal, payload))
+
+
+@router.post("/query", response_model=QueryTasks, response_model_exclude_unset=True)
+async def query_tasks(
+    payload: ViewQuery,
+    principal: CurrentPrincipal,
+    service: Service,
+    expand: Annotated[str | None, Query(description="Как в GET /tasks")] = None,
+) -> QueryTasks:
+    """Выполнить несохранённый view: та же грамматика фильтров, та же видимость.
+
+    Только чтение — годится и токен со `scope = read`.
+    """
+    groups = await service.query(principal, payload, expand=parse_expand(expand, detail=False))
+    return QueryTasks(group_by=payload.group_by, groups=groups)
 
 
 @router.get("/{view_id}", response_model=ViewRead)

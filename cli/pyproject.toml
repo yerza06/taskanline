@@ -3,7 +3,14 @@ name = "taskanline-cli"
 description = "CLI tkl для TasKanLine"
 requires-python = ">=3.13,<3.14"
 dynamic = ["version"]
-dependencies = ["taskanline-sdk",]
+dependencies = [
+    "rich>=13.9",
+    "taskanline-sdk",
+    "typer>=0.15",
+]
+
+[project.scripts]
+tkl = "taskanline_cli.app:entry"
 
 [build-system]
 requires = ["hatchling"]

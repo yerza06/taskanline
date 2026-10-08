@@ -688,6 +688,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/views/query": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Query Tasks
+         * @description Выполнить несохранённый view: та же грамматика фильтров, та же видимость.
+         *
+         *     Только чтение — годится и токен со `scope = read`.
+         */
+        post: operations["query_tasks_api_v1_views_query_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/views/{view_id}": {
         parameters: {
             query?: never;
@@ -1437,6 +1459,12 @@ export interface components {
             /** Target Date */
             target_date?: string | null;
         };
+        /** QueryTasks */
+        QueryTasks: {
+            group_by: components["schemas"]["ViewGroupBy"] | null;
+            /** Groups */
+            groups: components["schemas"]["TaskGroup"][];
+        };
         /** RegisterRequest */
         RegisterRequest: {
             /**
@@ -2088,6 +2116,39 @@ export interface components {
         ViewList: {
             /** Items */
             items: components["schemas"]["ViewRead"][];
+        };
+        /**
+         * ViewQuery
+         * @description Определение несохранённого view и страница его выполнения — для CLI и агентов.
+         */
+        ViewQuery: {
+            /** Cursor */
+            cursor?: string | null;
+            /** Filters */
+            filters?: {
+                [key: string]: components["schemas"]["FilterCondition"];
+            };
+            /**
+             * Group
+             * @description Ключ группы — листать одну; none — группа без значения
+             */
+            group?: string | null;
+            group_by?: components["schemas"]["ViewGroupBy"] | null;
+            /**
+             * Limit
+             * @description Задач на группу
+             * @default 50
+             */
+            limit: number;
+            /** @default manual */
+            sort_by: components["schemas"]["ViewSortBy"];
+            /** @default asc */
+            sort_direction: components["schemas"]["SortDirection"];
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
         };
         /** ViewRead */
         ViewRead: {
@@ -4169,6 +4230,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ViewRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    query_tasks_api_v1_views_query_post: {
+        parameters: {
+            query?: {
+                /** @description Как в GET /tasks */
+                expand?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ViewQuery"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueryTasks"];
                 };
             };
             /** @description Validation Error */

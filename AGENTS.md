@@ -40,8 +40,9 @@ Obsidian-vault, git его игнорирует). **Читать перед лю
 `frontend_client`. Этап 3 «Ядро задач» закрыт 2026-10-08 (только бэкенд): задачи с ключами
 `ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления и
 `Idempotency-Key`. Этап 4 «Views» закрыт 2026-10-08: сохранённые срезы с фильтрами,
-сортировкой, группировкой и правами трёх scope. Следующий — этапы 5 «Веб-клиент» и 7 «SDK и
-CLI», их можно вести параллельно. Каждый
+сортировкой, группировкой и правами трёх scope. Этап 7 «SDK и CLI» закрыт 2026-10-08:
+`taskanline_sdk` и CLI `tkl` для агентов. Следующие — этап 5 «Веб-клиент» и этап 8 «MCP-сервер»
+(он строится на том же SDK). Каждый
 этап перед началом превращается в отдельный implementation plan через `superpowers:writing-plans`
 и кладётся в `docs/superpowers/plans/`; разработка по TDD — тест пишется первым и падает по нужной
 причине.
@@ -72,8 +73,11 @@ uv run pytest
 uv run pytest backend/tests/test_config.py::TestDatabase::test_url_is_composed_from_parts
 uv run pytest -k cors
 
+# CLI из репозитория (бинарь tkl; тесты SDK и CLI идут в общем uv run pytest)
+uv run tkl --help
+
 # Линтеры и типы
-uv run ruff check . && uv run ruff format . && uv run mypy backend
+uv run ruff check . && uv run ruff format . && uv run mypy backend sdk cli
 
 # Веб-клиент
 cd frontend_client && bun install
@@ -229,6 +233,28 @@ uv run python -m app.admin grant --email ivan@example.com --role superadmin
   маршрут `/views/{view_id}/…` попадает в `special` теста покрытия матрицы и проверяется в
   `tests/test_views.py`.
 
+## SDK и CLI
+
+- **CLI не делает HTTP сам — только через `taskanline_sdk`.** Новый эндпоинт — сначала метод
+  ресурса в `sdk/src/taskanline_sdk/client.py` и тест на `httpx.MockTransport` в
+  `sdk/sdk_tests/`, потом команда.
+- **Списки задач CLI идут через `POST /views/query`**, а мини-DSL (`cli/.../filters.py`)
+  переводится в грамматику views. Новое поле фильтра — сначала в `views/filters.py`, потом
+  ветка в `Session._condition` (`context.py`) и кейс в `cli_tests/test_cli_compile.py`.
+- **В stdout — только данные.** Всё служебное — `output.info()` в stderr. Коды выхода — по
+  `ExitCode` (`errors.py`); ошибка самого CLI — `CliError` с кодом в стиле API.
+- **Компактный вид задачи** (`present.compact_task`) — контракт для агентов: его снимки в
+  `cli_tests/test_cli_output.py` обязаны падать при изменении полей.
+- **Typer 0.27 несёт свою копию Click.** `click.get_current_context()` её контекстов не видит,
+  исключения `click.UsageError` из неё не ловятся — поэтому опции вызова лежат в
+  `context._current`, а `main()` запускает команду в standalone-режиме и переводит код 2 Click в
+  1.
+- **Швы для тестов** — `context.RUNNER`, `context.TRANSPORT`, `context.CLIENT_OPTIONS`.
+  `backend/tests/test_scenario_cli.py` гоняет `tkl` против настоящего приложения: команда — в
+  отдельном потоке, её корутина — в цикле событий теста, где живёт соединение с базой.
+- Тесты SDK и CLI лежат в пакетах `sdk/sdk_tests` и `cli/cli_tests` — не `tests`, чтобы не
+  столкнуться с пакетом `tests` бэкенда.
+
 ## Тесты
 
 Основная масса — интеграционные, через `httpx.AsyncClient` поверх ASGI-приложения и **реальную
@@ -304,8 +330,7 @@ asyncpg, открытое в чужом цикле событий, падает 
 ## Мелочи, на которых легко споткнуться
 
 - В ruff отключены `RUF001–003`: они ругаются на кириллицу в комментариях и дают только шум.
-- `mypy` в строгом режиме покрывает только `backend`; `sdk`/`cli`/`mcp` попадут под него на своих
-  этапах.
+- `mypy` в строгом режиме покрывает `backend`, `sdk` и `cli`; `mcp` попадёт под него на этапе 8.
 - Remote на GitHub пока нет — CI в `.github/workflows/ci.yml` написан, но на PR не прогонялся.
 - `teams.key` — `VARCHAR(5)`. Ключ длиннее пяти символов (например, `ENGINE`) PostgreSQL валит
   усечением строки раньше проверки `CHECK key_format`, поэтому тест ловит `DBAPIError`

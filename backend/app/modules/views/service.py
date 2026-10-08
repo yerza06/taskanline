@@ -30,7 +30,7 @@ from app.modules.teams.service import TeamService
 from app.modules.views.filters import FilterContext, FilterError, parse_filters, translate
 from app.modules.views.models import View
 from app.modules.views.repository import ViewRepository
-from app.modules.views.schemas import ViewCreate, ViewUpdate, filters_json
+from app.modules.views.schemas import ViewCreate, ViewQuery, ViewUpdate, filters_json
 
 
 def _not_found() -> ApiError:
@@ -184,6 +184,30 @@ class ViewService:
             expand=expand,
         )
         return view, groups
+
+    async def query(
+        self, principal: Principal, data: ViewQuery, *, expand: frozenset[str]
+    ) -> list[TaskGroup]:
+        """Несохранённый view: фильтры уже проверены схемой, права — чтение workspace."""
+        ctx = await resolve_access(
+            self._session,
+            principal,
+            on="workspace",
+            object_id=data.workspace_id,
+            permission=Permission.WORKSPACE_READ,
+        )
+        today = datetime.now(UTC).date()
+        conditions = parse_filters(filters_json(data.filters))
+        return await TaskService(self._session).run_query(
+            ctx,
+            translate(conditions, FilterContext(user_id=principal.user_id, today=today)),
+            SortSpec(data.sort_by, data.sort_direction),
+            group_by=data.group_by,
+            group=data.group,
+            cursor=data.cursor,
+            limit=data.limit,
+            expand=expand,
+        )
 
     # --- Права -----------------------------------------------------------------
 
