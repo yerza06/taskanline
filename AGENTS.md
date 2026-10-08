@@ -41,8 +41,9 @@ Obsidian-vault, git его игнорирует). **Читать перед лю
 `ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления и
 `Idempotency-Key`. Этап 4 «Views» закрыт 2026-10-08: сохранённые срезы с фильтрами,
 сортировкой, группировкой и правами трёх scope. Этап 7 «SDK и CLI» закрыт 2026-10-08:
-`taskanline_sdk` и CLI `tkl` для агентов. Следующие — этап 5 «Веб-клиент» и этап 8 «MCP-сервер»
-(он строится на том же SDK). Каждый
+`taskanline_sdk` и CLI `tkl` для агентов. Этап 8 «MCP-сервер» закрыт 2026-10-08: `tkl-mcp` для
+Claude, ChatGPT и других MCP-клиентов. Следующий — этап 5 «Веб-клиент», за ним 6 «Админ-панель».
+Каждый
 этап перед началом превращается в отдельный implementation plan через `superpowers:writing-plans`
 и кладётся в `docs/superpowers/plans/`; разработка по TDD — тест пишется первым и падает по нужной
 причине.
@@ -75,9 +76,10 @@ uv run pytest -k cors
 
 # CLI из репозитория (бинарь tkl; тесты SDK и CLI идут в общем uv run pytest)
 uv run tkl --help
+uv run tkl-mcp --read-only          # MCP-сервер по stdio; --transport http --port 8765 — по HTTP
 
 # Линтеры и типы
-uv run ruff check . && uv run ruff format . && uv run mypy backend sdk cli
+uv run ruff check . && uv run ruff format . && uv run mypy backend sdk cli mcp
 
 # Веб-клиент
 cd frontend_client && bun install
@@ -255,6 +257,22 @@ uv run python -m app.admin grant --email ivan@example.com --role superadmin
 - Тесты SDK и CLI лежат в пакетах `sdk/sdk_tests` и `cli/cli_tests` — не `tests`, чтобы не
   столкнуться с пакетом `tests` бэкенда.
 
+## MCP-сервер
+
+- **Никакой логики сверх SDK.** Инструмент `taskanline_mcp/server.py` открывает клиент на вызов
+  (`TaskanlineServer.session`) и пользуется `Resolver`; если хочется посчитать что-то самому —
+  этому место в API.
+- **`mcp` 2.x — это `MCPServer`, а не FastMCP.** Инструмент регистрируется через
+  `TaskanlineServer._tool`: обёртка `_guarded` превращает ответ в JSON, а исключения SDK — в
+  `isError` с текстом из `errors.message_for`. Описание инструмента — его docstring, и это
+  промпт для модели: когда выбирать, а не только что делает.
+- **Новый инструмент записи** регистрируется в `_register_write_tools` — тогда `--read-only`
+  убирает его сам; плюс строка в снимке `SCHEMAS` в `mcp_tests/test_mcp_catalog.py`.
+- **HTTP-режим (`token_from_header`) не берёт токен процесса** — только `Authorization` запроса.
+- **Каталог `mcp/` в корне совпадает по имени с библиотекой `mcp`**: в ruff она помечена
+  `known-third-party`, тесты лежат в `mcp/mcp_tests`. Поддельное API тесты MCP берут у
+  `cli_tests.fake_api` — поэтому в `pytest` задан `pythonpath`.
+
 ## Тесты
 
 Основная масса — интеграционные, через `httpx.AsyncClient` поверх ASGI-приложения и **реальную
@@ -330,7 +348,7 @@ asyncpg, открытое в чужом цикле событий, падает 
 ## Мелочи, на которых легко споткнуться
 
 - В ruff отключены `RUF001–003`: они ругаются на кириллицу в комментариях и дают только шум.
-- `mypy` в строгом режиме покрывает `backend`, `sdk` и `cli`; `mcp` попадёт под него на этапе 8.
+- `mypy` в строгом режиме покрывает `backend`, `sdk`, `cli` и `mcp`.
 - Remote на GitHub пока нет — CI в `.github/workflows/ci.yml` написан, но на PR не прогонялся.
 - `teams.key` — `VARCHAR(5)`. Ключ длиннее пяти символов (например, `ENGINE`) PostgreSQL валит
   усечением строки раньше проверки `CHECK key_format`, поэтому тест ловит `DBAPIError`

@@ -52,8 +52,7 @@ def test_missing_task_names_teams(tkl: Tkl) -> None:
 
     assert result.code == 4
     assert result.err == (
-        "Ошибка [task_not_found]: Задача ENG-999 не найдена.\n"
-        "Доступные команды: ENG\n"
+        "Ошибка [task_not_found]: Задача ENG-999 не найдена.\nДоступные команды: ENG\n"
     )
 
 
