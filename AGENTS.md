@@ -37,7 +37,9 @@ Obsidian-vault, git его игнорирует). **Читать перед лю
 вход, регистрация, профиль и страница токенов (часть пунктов этапа 5 досрочно). Этап 2
 «Организационная структура и права» закрыт 2026-09-25: рабочие пространства, команды, проекты,
 приглашения по почте и слой авторизации `core/permissions.py`, плюс страница `/invite/$token` в
-`frontend_client`. Следующий — этап 3 «Ядро задач». Каждый
+`frontend_client`. Этап 3 «Ядро задач» закрыт 2026-10-08 (только бэкенд): задачи с ключами
+`ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления и
+`Idempotency-Key`. Следующий — этап 4 «Views». Каждый
 этап перед началом превращается в отдельный implementation plan через `superpowers:writing-plans`
 и кладётся в `docs/superpowers/plans/`; разработка по TDD — тест пишется первым и падает по нужной
 причине.
@@ -185,6 +187,31 @@ uv run python -m app.admin grant --email ivan@example.com --role superadmin
 на уровне модуля: приглашения отзываются в той же транзакции, но модуль `invitations` не должен
 становиться импортной зависимостью `teams`/`projects` на верхнем уровне файла.
 
+## Задачи
+
+Модули этапа 3: `states`, `tasks`, `labels`, `comments`, `activities`, `notifications`,
+`idempotency`. Что важно не сломать:
+
+- **`{task_id}` в пути — UUID или ключ `ENG-142`.** Разбор — в `require_permission(…, on="task")`
+  через `find_task_by_key`; сервис берёт уже разрешённый id из `ctx.object_id`, а не из пути.
+  Ссылки на задачу в теле (`parent_id`, `target_id`, `after_id`, `before_id`) — строкой, тоже
+  UUID или ключ, разбираются `task_ref_to_id` в пределах `ctx.workspace_id`.
+- **`load_access` находит объект через «якорь»** (`_anchor` в `permissions.py`): задача, статус,
+  метка и комментарий сводятся к `(workspace_id, team_id, project_id)` и дальше считаются тем же
+  одним запросом. Новый вид объекта — новая ветка в `_anchor` и строка в `_NOT_FOUND`.
+- **Видимость в списках** — `task_visibility(workspace_role, user_id)`; это вторая реализация
+  правила `compute_effective_role`, и `test_permissions_tasks.py` сверяет их на всех формах
+  членства. Меняешь одно — меняй и другое.
+- **`sort_order` — `COLLATE "C"`**, порядок общий на команду. Ключи — только через
+  `core/fractional_index.py`; перестановка держит блокировку строки команды (`TeamService.lock`).
+- **Каждое изменение задачи пишет `activities` в той же транзакции** (`TaskService._record`,
+  снаружи модуля — `TaskService.record`). Без commit внутри — коммитит публичный метод сервиса.
+- **`TaskService.create` не коммитит**: его коммитит `IdempotencyService.execute` вместе с
+  сохранённым ответом. Новый идемпотентный `POST` устроен так же.
+- **Удалённая задача — 404** во всех эндпоинтах, кроме `restore` и `GET …/activities`.
+- **Статусы и метки команды** читает и участник любого её проекта — зависимость
+  `require_team_read`, а не `TEAM_READ`: иначе подрядчик не может работать со своими задачами.
+
 ## Тесты
 
 Основная масса — интеграционные, через `httpx.AsyncClient` поверх ASGI-приложения и **реальную
@@ -201,7 +228,9 @@ PostgreSQL**. Фикстура `db_connection` держит внешнюю тр�
 фабрика клиентов с разным IP каждый (лимиты на регистрацию и вход считаются по IP, иначе пятый
 пользователь в одном тесте ловил бы 429); `mailer` — `RecordingMailer`, подставленный в
 `app.state.mailer`, чтобы тест читал тело письма-приглашения, не поднимая SMTP. Общие помощники
-(`create_workspace`, `create_team`, …) — в `backend/tests/org.py`, а не дублируются в каждом файле.
+(`create_workspace`, `create_team`, `create_task`, `team_states`, `activity_types`, …) — в
+`backend/tests/org.py`, а не дублируются в каждом файле; мир задач (владелец, команда ENG,
+проект, статусы) — класс `World` из `tests/test_tasks.py`.
 
 `asyncio_default_fixture_loop_scope = "function"` в `pyproject.toml` менять нельзя: соединение
 asyncpg, открытое в чужом цикле событий, падает с «attached to a different loop».
