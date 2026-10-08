@@ -142,6 +142,8 @@ def run() -> None:
         host=settings.server.host,
         port=settings.server.port,
         reload=settings.server.reload,
+        proxy_headers=True,
+        forwarded_allow_ips=settings.server.forwarded_allow_ips,
         # Свой конфиг логов uvicorn не навязывает: формат уже задал structlog,
         # иначе одно и то же событие печатается дважды в двух разных форматах.
         log_config=None,

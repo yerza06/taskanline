@@ -191,3 +191,11 @@ jobs:
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: frontend_admin
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend_admin/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

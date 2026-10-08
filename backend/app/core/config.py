@@ -152,6 +152,10 @@ class ServerSettings(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8000
     reload: bool = Field(default=False, description="Автоперезапуск: только для разработки")
+    # Чьим заголовкам X-Forwarded-For верить. За nginx без этого и журнал аудита, и
+    # лимиты видят адрес прокси, а не человека. "*" — только когда до API нельзя
+    # достучаться мимо прокси.
+    forwarded_allow_ips: str = "127.0.0.1"
 
 
 class LogSettings(BaseModel):
