@@ -231,7 +231,8 @@ class TaskService:
         else:
             counts = await self._tasks.view_group_counts(ctx.workspace_id, scoped, group_by)
             if only is not None:
-                counts = [(key, count) for key, count in counts if key == only[0]]
+                # Пустая колонка доски — группа с нулём, а не пропажа группы.
+                counts = [(key, count) for key, count in counts if key == only[0]] or [(only[0], 0)]
 
         grouped: dict[Any, list[Task]] = {key: [] for key, _ in counts}
         for task, key in rows:
