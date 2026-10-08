@@ -66,7 +66,7 @@ ignore = [
 [tool.ruff.lint.isort]
 # Пакеты воркспейса установлены в окружение, и без этой строки ruff считает их
 # сторонними и перемешивает с fastapi.
-known-first-party = ["app", "tests", "taskanline_sdk", "taskanline_cli", "taskanline_mcp"]
+known-first-party = ["app", "tests", "sdk_tests", "cli_tests", "taskanline_sdk", "taskanline_cli", "taskanline_mcp"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/*" = ["S101"]
@@ -75,7 +75,7 @@ known-first-party = ["app", "tests", "taskanline_sdk", "taskanline_cli", "taskan
 python_version = "3.13"
 strict = true
 plugins = ["pydantic.mypy"]
-files = ["backend/app"]
+files = ["backend/app", "sdk/src"]
 exclude = ["backend/migrations/"]
 
 [[tool.mypy.overrides]]
@@ -91,5 +91,5 @@ asyncio_mode = "auto"
 # Фикстуры живут в том же цикле событий, что и тест: соединение asyncpg,
 # открытое в чужом цикле, падает с "attached to a different loop".
 asyncio_default_fixture_loop_scope = "function"
-testpaths = ["backend/tests"]
+testpaths = ["backend/tests", "sdk/sdk_tests"]
 addopts = "-q --strict-markers"
