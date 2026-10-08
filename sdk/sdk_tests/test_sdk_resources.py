@@ -73,11 +73,11 @@ async def test_update_sends_explicit_null() -> None:
     assert json.loads(request.content) == {"assignee_id": None, "priority": 1}
 
 
-async def test_delete_returns_none_on_204() -> None:
+async def test_delete_accepts_empty_204() -> None:
     fake = Fake(httpx.Response(204))
 
     async with fake.client() as client:
-        assert await client.tasks.delete("ENG-1") is None
+        await client.tasks.delete("ENG-1")
 
     assert fake.requests[0].method == "DELETE"
 

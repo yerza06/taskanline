@@ -61,7 +61,7 @@ test-front: ## Тесты веб-клиента. Аргументы: make test-f
 lint: ## Линтеры и проверка типов на обеих половинах
 	uv run ruff check .
 	uv run ruff format --check .
-	uv run mypy backend
+	uv run mypy backend sdk cli
 	cd $(FRONT) && bun run lint && bun run typecheck
 
 format: ## Отформатировать и починить автоисправимое

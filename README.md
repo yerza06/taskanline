@@ -7,10 +7,11 @@
 
 **Стек:** Python 3.13 · FastAPI · SQLAlchemy 2.0 (async) · PostgreSQL 16 · React 19 · TypeScript · Vite · Tailwind
 
-> Текущее состояние — закрыты **этапы 0–4**: каркас, аутентификация и PAT-токены, рабочие
+> Текущее состояние — закрыты **этапы 0–4 и 7**: каркас, аутентификация и PAT-токены, рабочие
 > пространства/команды/проекты с приглашениями по почте и правами трёх уровней, ядро задач
-> (ключи `ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления) и
-> сохраняемые Views — пока только через API. Дальше — веб-клиент (этап 5) и SDK с CLI (этап 7). Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
+> (ключи `ENG-142`, статусы, метки, подзадачи, связи, комментарии, история, уведомления),
+> сохраняемые Views, Python-SDK и CLI `tkl` для агентов. Дальше — веб-клиент (этап 5) и
+> MCP-сервер (этап 8). Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
 
 ## Структура
 
@@ -18,8 +19,8 @@
 backend/          FastAPI-приложение и миграции Alembic
 frontend_client/  веб-клиент (Vite + React + TypeScript), светлая и тёмная темы
 frontend_admin/   админ-панель: тот же стек, те же токены тем        — этап 6
-sdk/              Python-клиент API, общий для CLI и MCP              — этап 7
-cli/              CLI tkl                                             — этап 7
+sdk/              Python-клиент API, общий для CLI и MCP
+cli/              CLI tkl для агентов и терминала
 mcp/              MCP-сервер                                          — этап 8
 deploy/           docker-compose и конфигурация nginx
 docs/             спецификации (симлинк в Obsidian)
@@ -161,6 +162,25 @@ curl -s -H "Authorization: Bearer tkl_…" http://localhost:8000/api/v1/me
 запрос с cookie-сессией обязан нести заголовок `X-Requested-With: XMLHttpRequest` — без него
 ответ `403 csrf_required`. Токены хранятся в базе только хешем, потерянный токен не
 восстанавливается — выпускается новый.
+
+## CLI `tkl`
+
+```bash
+uv tool install ./cli                     # из репозитория; бинарь — tkl
+tkl auth login --token tkl_… --api-url http://localhost:8000
+tkl config set team ENG                   # команда по умолчанию
+
+tkl team states ENG                       # какие статусы есть — до любых изменений
+tkl task list --filter "assignee:me state-type:started"
+tkl task state ENG-142 "In Progress"
+tkl task comment ENG-142 -m "Исправлено в PR #218"
+tkl task close ENG-142
+tkl view run "Мои незакрытые баги"
+```
+
+Вывод — таблица в терминале и JSON при перенаправлении (`tkl task list > tasks.json`). Коды
+выхода различают ошибки: 3 — нет доступа, 4 — не найдено, 6 — rate limit, 7 — сеть. Полное
+описание — в CLI-спеке (`docs/superpowers/specs/…-cli-spec.md`).
 
 Если доступ к единственному `superadmin` потерян, роль назначается с сервера:
 
