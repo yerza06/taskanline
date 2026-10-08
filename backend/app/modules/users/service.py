@@ -1,5 +1,6 @@
 """Бизнес-правила вокруг пользователя."""
 
+from collections.abc import Collection, Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -28,6 +29,13 @@ class UserService:
 
     async def find_by_email(self, email: str) -> User | None:
         return await self._users.get_by_email(email)
+
+    async def get_many(self, user_ids: Collection[UUID]) -> Sequence[User]:
+        return await self._users.get_many(user_ids)
+
+    async def find_many_by_email(self, emails: Collection[str]) -> Sequence[User]:
+        """Сравнение регистронезависимо — колонка CITEXT."""
+        return await self._users.get_many_by_email(emails)
 
     async def update_profile(self, user_id: UUID, data: UserUpdate) -> User:
         user = await self.get_active(user_id)

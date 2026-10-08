@@ -17,6 +17,14 @@ class ProjectRepository:
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
 
+    async def get_many(self, project_ids: Sequence[UUID], workspace_id: UUID) -> Sequence[Project]:
+        if not project_ids:
+            return []
+        stmt = select(Project).where(
+            Project.id.in_(project_ids), Project.workspace_id == workspace_id
+        )
+        return (await self._session.scalars(stmt)).all()
+
     async def get_in_workspace(self, project_id: UUID, workspace_id: UUID) -> Project | None:
         project: Project | None = await self._session.scalar(
             select(Project).where(Project.id == project_id, Project.workspace_id == workspace_id)

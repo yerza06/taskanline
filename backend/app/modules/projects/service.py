@@ -62,6 +62,9 @@ class ProjectService:
     async def get_in_workspace(self, project_id: UUID, workspace_id: UUID) -> Project | None:
         return await self._projects.get_in_workspace(project_id, workspace_id)
 
+    async def get_many(self, project_ids: Sequence[UUID], workspace_id: UUID) -> Sequence[Project]:
+        return await self._projects.get_many(project_ids, workspace_id)
+
     async def update(self, ctx: AccessContext, data: ProjectUpdate) -> Project:
         project = await self.get(ctx)
         changes = data.model_dump(exclude_unset=True)

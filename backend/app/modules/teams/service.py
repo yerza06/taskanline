@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.enums import TeamRole
 from app.core.errors import ApiError
 from app.core.permissions import AccessContext, EffectiveRole
+from app.modules.states.service import StateService
 from app.modules.teams.models import Team, TeamMember
 from app.modules.teams.repository import TeamRepository
 from app.modules.teams.schemas import TeamCreate, TeamUpdate
@@ -52,6 +53,7 @@ class TeamService:
                 user_id=ctx.principal.user_id,
                 role=TeamRole.LEAD,
             )
+            await StateService(self._session).create_defaults(ctx.workspace_id, team.id)
         except IntegrityError as error:
             await self._session.rollback()
             raise _key_taken(data.key) from error
@@ -74,6 +76,15 @@ class TeamService:
 
     async def get_in_workspace(self, team_id: UUID, workspace_id: UUID) -> Team | None:
         return await self._teams.get_in_workspace(team_id, workspace_id)
+
+    async def get_many(self, team_ids: Sequence[UUID], workspace_id: UUID) -> Sequence[Team]:
+        return await self._teams.get_many(team_ids, workspace_id)
+
+    async def next_task_number(self, team_id: UUID) -> int:
+        return await self._teams.next_task_number(team_id)
+
+    async def lock(self, team_id: UUID) -> None:
+        await self._teams.lock(team_id)
 
     async def update(self, ctx: AccessContext, data: TeamUpdate) -> Team:
         team = await self.get(ctx)

@@ -203,6 +203,8 @@ class AccessContext:
     # Роль в самом workspace: по ней строится видимость соседних объектов —
     # задач в списке, связей, подзадач.
     workspace_role: WorkspaceRole
+    # Id объекта проверки: у задачи — уже разрешённый из ключа `ENG-142` UUID.
+    object_id: UUID
 
     @property
     def team(self) -> UUID:
@@ -385,7 +387,7 @@ async def resolve_access(
 
     row = await load_access(session, principal.user_id, on, object_id) if object_id else None
     role = compute_effective_role(row) if row is not None else None
-    if row is None or role is None or row.workspace_role is None:
+    if row is None or role is None or row.workspace_role is None or object_id is None:
         raise ApiError(404, f"{on}_not_found", _NOT_FOUND[on])
 
     minimum = MIN_ROLE[permission]
@@ -404,6 +406,7 @@ async def resolve_access(
         project_id=row.project_id,
         role=role,
         workspace_role=row.workspace_role,
+        object_id=object_id,
     )
 
 
@@ -545,3 +548,47 @@ def _query_uuid(request: Request, name: str) -> UUID | None:
         return UUID(value)
     except ValueError:
         raise ApiError(400, "invalid_workspace_id", "workspace_id должен быть UUID") from None
+
+
+async def resolve_team_read(
+    session: AsyncSession, principal: Principal, team_id: UUID | None
+) -> AccessContext:
+    """Чтение того, что команда делит со своими проектами: статусы и метки.
+
+    Подрядчик — участник проекта без членства в команде — команду не видит, но без
+    её статусов и меток он не может работать со своими задачами. Поэтому сюда
+    пускает и `TEAM_READ`, и членство в любом проекте этой команды.
+    """
+    from app.modules.projects.models import Project, ProjectMember
+
+    try:
+        return await resolve_access(
+            session, principal, on="team", object_id=team_id, permission=Permission.TEAM_READ
+        )
+    except ApiError as error:
+        if error.status_code != 404 or team_id is None:
+            raise
+        project_id = await session.scalar(
+            select(ProjectMember.project_id)
+            .join(Project, Project.id == ProjectMember.project_id)
+            .where(Project.team_id == team_id, ProjectMember.user_id == principal.user_id)
+            .limit(1)
+        )
+        if project_id is None:
+            raise
+        return await resolve_access(
+            session,
+            principal,
+            on="project",
+            object_id=project_id,
+            permission=Permission.PROJECT_READ,
+        )
+
+
+async def require_team_read(
+    request: Request,
+    principal: CurrentPrincipal,
+    session: Annotated[AsyncSession, Depends(get_session)],
+) -> AccessContext:
+    """Зависимость для `resolve_team_read`: id команды — из параметра пути `team_id`."""
+    return await resolve_team_read(session, principal, _path_uuid(request, "team_id"))

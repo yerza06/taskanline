@@ -108,3 +108,26 @@ async def grant(
             )
         )
     await session.flush()
+
+
+async def team_states(client: AsyncClient, team_id: str) -> dict[str, dict[str, Any]]:
+    """Статусы команды по названию: `states["In Progress"]["id"]`."""
+    response = await client.get(f"{API}/teams/{team_id}/states")
+    assert response.status_code == 200, response.text
+    return {state["name"]: state for state in response.json()["items"]}
+
+
+async def create_task(
+    client: AsyncClient, *, title: str = "Задача", **fields: Any
+) -> dict[str, Any]:
+    response = await client.post(f"{API}/tasks", json={"title": title, **fields})
+    assert response.status_code == 201, response.text
+    body: dict[str, Any] = response.json()
+    return body
+
+
+async def activity_types(client: AsyncClient, task: str) -> list[str]:
+    """Типы событий истории — от старых к новым."""
+    response = await client.get(f"{API}/tasks/{task}/activities", params={"limit": 100})
+    assert response.status_code == 200, response.text
+    return [item["type"] for item in reversed(response.json()["items"])]
