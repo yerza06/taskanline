@@ -5,8 +5,9 @@
 вторым списком в CMD контейнера значит однажды их рассинхронизировать.
 """
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Literal
 
 import structlog
@@ -21,12 +22,13 @@ from app import __version__
 from app.api import api_router
 from app.core.config import get_settings
 from app.core.csrf import CsrfMiddleware
-from app.core.database import get_engine
+from app.core.database import get_engine, get_sessionmaker
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
 from app.core.mail import build_mailer
 from app.core.middleware import RequestIdMiddleware
 from app.core.rate_limit import InMemoryRateLimiter
+from app.modules.idempotency.service import IdempotencyService
 
 logger = structlog.get_logger(__name__)
 
@@ -47,10 +49,35 @@ async def _database_is_reachable() -> bool:
     return True
 
 
+# Как часто удалять ответы `Idempotency-Key` старше суток.
+IDEMPOTENCY_PURGE_INTERVAL = 3600
+
+
+async def _purge_idempotency_keys() -> None:
+    """При старте и раз в час. Отдельного воркера не нужно: это один DELETE по индексу.
+
+    Сбой очистки только логируется: от неё зависит размер таблицы, а не ответы API.
+    """
+    while True:
+        try:
+            async with get_sessionmaker()() as session:
+                removed = await IdempotencyService(session).purge_expired()
+            logger.info("idempotency.purged", removed=removed)
+        except Exception as error:
+            logger.warning("idempotency.purge_failed", error=type(error).__name__)
+        await asyncio.sleep(IDEMPOTENCY_PURGE_INTERVAL)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    yield
-    await get_engine().dispose()
+    purge = asyncio.create_task(_purge_idempotency_keys())
+    try:
+        yield
+    finally:
+        purge.cancel()
+        with suppress(asyncio.CancelledError):
+            await purge
+        await get_engine().dispose()
 
 
 def create_app() -> FastAPI:
