@@ -75,6 +75,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/comments/{comment_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Comment */
+        delete: operations["delete_comment_api_v1_comments__comment_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Comment */
+        patch: operations["update_comment_api_v1_comments__comment_id__patch"];
+        trace?: never;
+    };
     "/api/v1/invitations": {
         parameters: {
             query?: never;
@@ -150,6 +168,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Labels */
+        get: operations["list_labels_api_v1_labels_get"];
+        put?: never;
+        /** Create Label */
+        post: operations["create_label_api_v1_labels_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/labels/{label_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Label */
+        delete: operations["delete_label_api_v1_labels__label_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Label */
+        patch: operations["update_label_api_v1_labels__label_id__patch"];
+        trace?: never;
+    };
     "/api/v1/me": {
         parameters: {
             query?: never;
@@ -166,6 +220,40 @@ export interface paths {
         head?: never;
         /** Update Me */
         patch: operations["update_me_api_v1_me_patch"];
+        trace?: never;
+    };
+    "/api/v1/me/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notifications */
+        get: operations["list_notifications_api_v1_me_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Read */
+        post: operations["mark_read_api_v1_me_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/me/tokens": {
@@ -294,6 +382,201 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/states/{state_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete State */
+        delete: operations["delete_state_api_v1_states__state_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update State */
+        patch: operations["update_state_api_v1_states__state_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/tasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Tasks */
+        get: operations["list_tasks_api_v1_tasks_get"];
+        put?: never;
+        /** Create Task */
+        post: operations["create_task_api_v1_tasks_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Read Task */
+        get: operations["read_task_api_v1_tasks__task_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Task */
+        delete: operations["delete_task_api_v1_tasks__task_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Task */
+        patch: operations["update_task_api_v1_tasks__task_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/activities": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Activities
+         * @description От новых событий к старым. История удалённой задачи тоже доступна.
+         */
+        get: operations["list_activities_api_v1_tasks__task_id__activities_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/comments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Comments */
+        get: operations["list_comments_api_v1_tasks__task_id__comments_get"];
+        put?: never;
+        /** Create Comment */
+        post: operations["create_comment_api_v1_tasks__task_id__comments_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/labels": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace Labels */
+        put: operations["replace_labels_api_v1_tasks__task_id__labels_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move Task */
+        post: operations["move_task_api_v1_tasks__task_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/relations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Relation */
+        post: operations["add_relation_api_v1_tasks__task_id__relations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/relations/{relation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Relation */
+        delete: operations["remove_relation_api_v1_tasks__task_id__relations__relation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Task */
+        post: operations["restore_task_api_v1_tasks__task_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tasks/{task_id}/subtasks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Subtasks */
+        get: operations["list_subtasks_api_v1_tasks__task_id__subtasks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/teams/{team_id}": {
         parameters: {
             query?: never;
@@ -360,6 +643,24 @@ export interface paths {
         put?: never;
         /** Create Project */
         post: operations["create_project_api_v1_teams__team_id__projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/teams/{team_id}/states": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List States */
+        get: operations["list_states_api_v1_teams__team_id__states_get"];
+        put?: never;
+        /** Create State */
+        post: operations["create_state_api_v1_teams__team_id__states_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -497,12 +798,114 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** ActivityPage */
+        ActivityPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["ActivityRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** ActivityRead */
+        ActivityRead: {
+            /**
+             * Actor Id
+             * Format: uuid
+             */
+            actor_id: string;
+            /** Actor Token Id */
+            actor_token_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Task Id */
+            task_id: string | null;
+            type: components["schemas"]["ActivityType"];
+        };
+        /**
+         * ActivityType
+         * @description Событие в истории задачи.
+         * @enum {string}
+         */
+        ActivityType: "task_created" | "title_changed" | "description_changed" | "state_changed" | "assignee_changed" | "priority_changed" | "due_date_changed" | "project_changed" | "parent_changed" | "label_added" | "label_removed" | "relation_added" | "relation_removed" | "commented" | "task_moved" | "task_deleted" | "task_restored";
         /**
          * AuthMethod
          * @description Чем доказана личность: cookie-сессией человека или токеном агента.
          * @enum {string}
          */
         AuthMethod: "session" | "token";
+        /** CommentCreate */
+        CommentCreate: {
+            /**
+             * Body
+             * @description Markdown; @email — упоминание
+             */
+            body: string;
+            /** Parent Id */
+            parent_id?: string | null;
+        };
+        /** CommentPage */
+        CommentPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["CommentRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** CommentRead */
+        CommentRead: {
+            /**
+             * Author Id
+             * Format: uuid
+             */
+            author_id: string;
+            /** Author Token Id */
+            author_token_id: string | null;
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mention Ids */
+            mention_ids: string[];
+            /** Parent Id */
+            parent_id: string | null;
+            /**
+             * Task Id
+             * Format: uuid
+             */
+            task_id: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** CommentUpdate */
+        CommentUpdate: {
+            /** Body */
+            body: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -651,6 +1054,68 @@ export interface components {
          * @enum {string}
          */
         InvitationStatus: "pending" | "accepted" | "expired" | "revoked";
+        /** LabelBrief */
+        LabelBrief: {
+            /** Color */
+            color: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+        };
+        /** LabelCreate */
+        LabelCreate: {
+            /** Color */
+            color: string;
+            /** Name */
+            name: string;
+            /** Team Id */
+            team_id?: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /** LabelList */
+        LabelList: {
+            /** Items */
+            items: components["schemas"]["LabelRead"][];
+        };
+        /** LabelRead */
+        LabelRead: {
+            /** Color */
+            color: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Team Id */
+            team_id: string | null;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /** LabelUpdate */
+        LabelUpdate: {
+            /** Color */
+            color?: string | null;
+            /** Name */
+            name?: string | null;
+        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -703,6 +1168,51 @@ export interface components {
             /** Workspaces */
             workspaces: components["schemas"]["WorkspaceMembership"][];
         };
+        /** NotificationPage */
+        NotificationPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["NotificationRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** NotificationRead */
+        NotificationRead: {
+            /**
+             * Actor Id
+             * Format: uuid
+             */
+            actor_id: string;
+            /** Comment Id */
+            comment_id: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Read At */
+            read_at: string | null;
+            /** Task Id */
+            task_id: string | null;
+            type: components["schemas"]["NotificationType"];
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * NotificationType
+         * @description Повод уведомления. На этапе 3 создаются только `mentioned` и `assigned`.
+         * @enum {string}
+         */
+        NotificationType: "mentioned" | "assigned" | "commented" | "state_changed";
         /** OwnershipTransfer */
         OwnershipTransfer: {
             /**
@@ -710,6 +1220,16 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+        };
+        /** ProjectBrief */
+        ProjectBrief: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
         };
         /** ProjectCreate */
         ProjectCreate: {
@@ -853,6 +1373,35 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** RelationCreate */
+        RelationCreate: {
+            /**
+             * Target Id
+             * @description UUID или ключ задачи, например ENG-142
+             */
+            target_id: string;
+            /**
+             * Type
+             * @description Тип связи со стороны этой задачи
+             * @enum {string}
+             */
+            type: "blocks" | "blocked_by" | "relates_to" | "duplicates" | "duplicated_by";
+        };
+        /** RelationRead */
+        RelationRead: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            task: components["schemas"]["TaskBrief"];
+            /**
+             * Type
+             * @description Тип связи со стороны этой задачи
+             * @enum {string}
+             */
+            type: "blocks" | "blocked_by" | "relates_to" | "duplicates" | "duplicated_by";
+        };
         /**
          * SessionResponse
          * @description Ответ регистрации, входа и обновления сессии.
@@ -863,6 +1412,284 @@ export interface components {
          */
         SessionResponse: {
             user: components["schemas"]["UserRead"];
+        };
+        /** StateBrief */
+        StateBrief: {
+            /** Color */
+            color: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            type: components["schemas"]["StateType"];
+        };
+        /** StateCreate */
+        StateCreate: {
+            /** Color */
+            color: string;
+            /**
+             * Is Default
+             * @default false
+             */
+            is_default: boolean;
+            /** Name */
+            name: string;
+            /** Position */
+            position?: number | null;
+            type: components["schemas"]["StateType"];
+        };
+        /** StateList */
+        StateList: {
+            /** Items */
+            items: components["schemas"]["StateRead"][];
+        };
+        /** StateRead */
+        StateRead: {
+            /** Color */
+            color: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Default */
+            is_default: boolean;
+            /** Name */
+            name: string;
+            /** Position */
+            position: number;
+            /**
+             * Team Id
+             * Format: uuid
+             */
+            team_id: string;
+            type: components["schemas"]["StateType"];
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * StateType
+         * @description Тип workflow-статуса: по нему, а не по названию, работают фильтры и отчёты.
+         * @enum {string}
+         */
+        StateType: "backlog" | "unstarted" | "started" | "completed" | "canceled";
+        /**
+         * StateUpdate
+         * @description Тип статуса не меняется: на нём держатся started_at/completed_at уже лежащих задач.
+         */
+        StateUpdate: {
+            /** Color */
+            color?: string | null;
+            /** Is Default */
+            is_default?: boolean | null;
+            /** Name */
+            name?: string | null;
+            /** Position */
+            position?: number | null;
+        };
+        /** TaskBrief */
+        TaskBrief: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key */
+            key: string;
+            /** Title */
+            title: string;
+        };
+        /**
+         * TaskCreate
+         * @description Нужна команда или проект; проект сам определяет команду.
+         */
+        TaskCreate: {
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /** Label Ids */
+            label_ids?: string[];
+            /**
+             * Parent Id
+             * @description UUID или ключ задачи, например ENG-142
+             */
+            parent_id?: string | null;
+            /**
+             * Priority
+             * @description 0 — нет, 1 — срочный … 4 — низкий
+             * @default 0
+             */
+            priority: number;
+            /** Project Id */
+            project_id?: string | null;
+            /** State Id */
+            state_id?: string | null;
+            /** Team Id */
+            team_id?: string | null;
+            /** Title */
+            title: string;
+        };
+        /** TaskLabelsUpdate */
+        TaskLabelsUpdate: {
+            /** Label Ids */
+            label_ids: string[];
+        };
+        /** TaskList */
+        TaskList: {
+            /** Items */
+            items: components["schemas"]["TaskRead"][];
+        };
+        /**
+         * TaskMove
+         * @description Перестановка и/или смена статуса одним вызовом.
+         *
+         *     Место задаётся соседом (`after_id` / `before_id`) или краем (`position`); порядок
+         *     общий на команду, поэтому «после X» означает «сразу после X» в любом срезе.
+         */
+        TaskMove: {
+            /**
+             * After Id
+             * @description UUID или ключ задачи, например ENG-142
+             */
+            after_id?: string | null;
+            /**
+             * Before Id
+             * @description UUID или ключ задачи, например ENG-142
+             */
+            before_id?: string | null;
+            /** Position */
+            position?: ("top" | "bottom") | null;
+            /** State Id */
+            state_id?: string | null;
+        };
+        /** TaskPage */
+        TaskPage: {
+            /** Has More */
+            has_more: boolean;
+            /** Items */
+            items: components["schemas"]["TaskRead"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /**
+         * TaskRead
+         * @description Плоский объект с id. Развёрнутые поля появляются только по `?expand=`.
+         */
+        TaskRead: {
+            assignee?: components["schemas"]["UserBrief"] | null;
+            /** Assignee Id */
+            assignee_id: string | null;
+            /** Completed At */
+            completed_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            creator?: components["schemas"]["UserBrief"] | null;
+            /**
+             * Creator Id
+             * Format: uuid
+             */
+            creator_id: string;
+            /** Deleted At */
+            deleted_at: string | null;
+            /** Description */
+            description: string | null;
+            /** Due Date */
+            due_date: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Key
+             * @description Ключ задачи, например ENG-142
+             */
+            key: string;
+            /** Label Ids */
+            label_ids: string[];
+            /** Labels */
+            labels?: components["schemas"]["LabelBrief"][] | null;
+            /** Number */
+            number: number;
+            parent?: components["schemas"]["TaskBrief"] | null;
+            /** Parent Id */
+            parent_id: string | null;
+            /** Priority */
+            priority: number;
+            project?: components["schemas"]["ProjectBrief"] | null;
+            /** Project Id */
+            project_id: string | null;
+            /** Relations */
+            relations?: components["schemas"]["RelationRead"][] | null;
+            /** Sort Order */
+            sort_order: string;
+            /** Started At */
+            started_at: string | null;
+            state?: components["schemas"]["StateBrief"] | null;
+            /**
+             * State Id
+             * Format: uuid
+             */
+            state_id: string;
+            /**
+             * Team Id
+             * Format: uuid
+             */
+            team_id: string;
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * TaskUpdate
+         * @description Присланное поле меняется, отсутствующее — нет. Явный null очищает необязательное.
+         */
+        TaskUpdate: {
+            /** Assignee Id */
+            assignee_id?: string | null;
+            /** Description */
+            description?: string | null;
+            /** Due Date */
+            due_date?: string | null;
+            /**
+             * Parent Id
+             * @description UUID или ключ задачи, например ENG-142
+             */
+            parent_id?: string | null;
+            /** Priority */
+            priority?: number | null;
+            /** Project Id */
+            project_id?: string | null;
+            /** State Id */
+            state_id?: string | null;
+            /** Title */
+            title?: string | null;
         };
         /** TeamCreate */
         TeamCreate: {
@@ -1049,6 +1876,20 @@ export interface components {
          * @enum {string}
          */
         TokenScope: "read" | "read_write";
+        /** UserBrief */
+        UserBrief: {
+            /** Avatar Url */
+            avatar_url: string | null;
+            /** Email */
+            email: string;
+            /** Full Name */
+            full_name: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+        };
         /**
          * UserRead
          * @description Публичный вид пользователя. Хеша пароля здесь нет и быть не может.
@@ -1305,6 +2146,70 @@ export interface operations {
             };
         };
     };
+    delete_comment_api_v1_comments__comment_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_comment_api_v1_comments__comment_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                comment_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_invitations_api_v1_invitations_get: {
         parameters: {
             query: {
@@ -1464,6 +2369,135 @@ export interface operations {
             };
         };
     };
+    list_labels_api_v1_labels_get: {
+        parameters: {
+            query: {
+                workspace_id: string;
+                team_id?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_label_api_v1_labels_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_label_api_v1_labels__label_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                label_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_label_api_v1_labels__label_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                label_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabelUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabelRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_me_api_v1_me_get: {
         parameters: {
             query?: never;
@@ -1504,6 +2538,71 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_me_notifications_get: {
+        parameters: {
+            query?: {
+                /** @description Только непрочитанные */
+                unread?: boolean;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mark_read_api_v1_me_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationRead"];
                 };
             };
             /** @description Validation Error */
@@ -1853,6 +2952,594 @@ export interface operations {
             };
         };
     };
+    delete_state_api_v1_states__state_id__delete: {
+        parameters: {
+            query?: {
+                /** @description Статус для переноса задач */
+                move_to?: string | null;
+            };
+            header?: never;
+            path: {
+                state_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_state_api_v1_states__state_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                state_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StateUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_tasks_api_v1_tasks_get: {
+        parameters: {
+            query: {
+                workspace_id: string;
+                team_id?: string[] | null;
+                project_id?: string[] | null;
+                state_id?: string[] | null;
+                state_type?: components["schemas"]["StateType"][] | null;
+                /** @description UUID, me или none — без исполнителя */
+                assignee_id?: string[] | null;
+                /** @description UUID или me */
+                creator_id?: string[] | null;
+                label_id?: string[] | null;
+                priority?: number[] | null;
+                parent_id?: string[] | null;
+                due_before?: string | null;
+                due_after?: string | null;
+                /** @description Полнотекстовый поиск */
+                q?: string | null;
+                /** @description Только удалённые */
+                deleted?: boolean;
+                limit?: number;
+                cursor?: string | null;
+                /** @description Через запятую: assignee, creator, state, labels, project, parent */
+                expand?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_task_api_v1_tasks_post: {
+        parameters: {
+            query?: {
+                /** @description Через запятую: assignee, creator, state, labels, project, parent */
+                expand?: string | null;
+            };
+            header?: {
+                /** @description Повтор с тем же ключом и телом вернёт сохранённый ответ */
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    /** @description true при повторе */
+                    "Idempotent-Replayed"?: unknown;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_task_api_v1_tasks__task_id__get: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+                /** @description Через запятую: assignee, creator, state, labels, project, parent */
+                expand?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_task_api_v1_tasks__task_id__delete: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_task_api_v1_tasks__task_id__patch: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+                /** @description Через запятую: assignee, creator, state, labels, project, parent */
+                expand?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_activities_api_v1_tasks__task_id__activities_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ActivityPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_comments_api_v1_tasks__task_id__comments_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_comment_api_v1_tasks__task_id__comments_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CommentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommentRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    replace_labels_api_v1_tasks__task_id__labels_put: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskLabelsUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_task_api_v1_tasks__task_id__move_post: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaskMove"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_relation_api_v1_tasks__task_id__relations_post: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelationCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelationRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_relation_api_v1_tasks__task_id__relations__relation_id__delete: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+                relation_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_task_api_v1_tasks__task_id__restore_post: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_subtasks_api_v1_tasks__task_id__subtasks_get: {
+        parameters: {
+            query?: {
+                /** @description Уточняет ключ задачи, найденный в нескольких workspace */
+                workspace_id?: string | null;
+                /** @description Через запятую: assignee, creator, state, labels, project, parent */
+                expand?: string | null;
+            };
+            header?: never;
+            path: {
+                task_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaskList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     read_team_api_v1_teams__team_id__get: {
         parameters: {
             query?: never;
@@ -2100,6 +3787,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_states_api_v1_teams__team_id__states_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StateList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_state_api_v1_teams__team_id__states_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                team_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StateCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StateRead"];
                 };
             };
             /** @description Validation Error */
