@@ -1,5 +1,6 @@
 """Запросы к таблице `users`. Про HTTP здесь ничего не известно."""
 
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
 from sqlalchemy import func, select, text
@@ -15,6 +16,16 @@ class UserRepository:
 
     async def get_by_id(self, user_id: UUID) -> User | None:
         return await self._session.get(User, user_id)
+
+    async def get_many(self, user_ids: Collection[UUID]) -> Sequence[User]:
+        if not user_ids:
+            return []
+        return (await self._session.scalars(select(User).where(User.id.in_(user_ids)))).all()
+
+    async def get_many_by_email(self, emails: Collection[str]) -> Sequence[User]:
+        if not emails:
+            return []
+        return (await self._session.scalars(select(User).where(User.email.in_(emails)))).all()
 
     async def get_by_email(self, email: str) -> User | None:
         """Сравнение регистронезависимо: колонка объявлена как CITEXT."""

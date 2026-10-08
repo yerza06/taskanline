@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import and_, delete, exists, func, or_, select
+from sqlalchemy import and_, delete, exists, func, or_, select, update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -21,6 +21,28 @@ class TeamRepository:
             select(Team).where(Team.id == team_id, Team.workspace_id == workspace_id)
         )
         return team
+
+    async def get_many(self, team_ids: Sequence[UUID], workspace_id: UUID) -> Sequence[Team]:
+        if not team_ids:
+            return []
+        stmt = select(Team).where(Team.id.in_(team_ids), Team.workspace_id == workspace_id)
+        return (await self._session.scalars(stmt)).all()
+
+    async def next_task_number(self, team_id: UUID) -> int:
+        """`UPDATE … RETURNING`: строчная блокировка сериализует создание задач одной
+        команды до конца транзакции, а откат возвращает счётчик — дыр в нумерации нет."""
+        number = await self._session.scalar(
+            update(Team)
+            .where(Team.id == team_id)
+            .values(task_counter=Team.task_counter + 1)
+            .returning(Team.task_counter)
+        )
+        assert number is not None, f"команда {team_id} исчезла посреди транзакции"
+        return number
+
+    async def lock(self, team_id: UUID) -> None:
+        """Блокировка строки команды — для перестановок и перегенерации sort_order."""
+        await self._session.execute(select(Team.id).where(Team.id == team_id).with_for_update())
 
     async def key_taken(self, workspace_id: UUID, key: str, *, exclude: UUID | None = None) -> bool:
         condition = and_(Team.workspace_id == workspace_id, func.upper(Team.key) == key.upper())

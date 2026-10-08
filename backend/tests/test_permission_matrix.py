@@ -20,7 +20,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.permissions import AccessTarget, EffectiveRole
 from app.openapi import dump
-from tests.org import API, create_project, create_team, create_workspace, grant, user_id_of
+from tests.org import (
+    API,
+    create_project,
+    create_task,
+    create_team,
+    create_workspace,
+    grant,
+    team_states,
+    user_id_of,
+)
 
 SignUp = Callable[..., Awaitable[AsyncClient]]
 
@@ -32,11 +41,26 @@ GUEST, VIEWER, MEMBER, ADMIN, OWNER = (
     EffectiveRole.OWNER,
 )
 
-# Какие эффективные роли достижимы на каждом уровне — снизу вверх.
+# Какие эффективные роли достижимы на каждом уровне — снизу вверх. Задача и
+# комментарий лежат в проекте, статус и метка — в команде.
 LEVEL_ROLES: dict[AccessTarget, list[EffectiveRole]] = {
     "workspace": [GUEST, MEMBER, ADMIN, OWNER],
     "team": [MEMBER, ADMIN, OWNER],
     "project": [VIEWER, MEMBER, ADMIN, OWNER],
+    "task": [VIEWER, MEMBER, ADMIN, OWNER],
+    "comment": [VIEWER, MEMBER, ADMIN, OWNER],
+    "state": [MEMBER, ADMIN, OWNER],
+    "label": [MEMBER, ADMIN, OWNER],
+}
+# Уровень, членством на котором собирается роль актора.
+SHAPE_LEVEL: dict[AccessTarget, AccessTarget] = {
+    "workspace": "workspace",
+    "team": "team",
+    "project": "project",
+    "task": "project",
+    "comment": "project",
+    "state": "team",
+    "label": "team",
 }
 
 
@@ -106,6 +130,62 @@ CASES = [
     Case("PATCH", "/projects/{project_id}/members/{user_id}", "project", ADMIN, {"role": "admin"}),
     Case("DELETE", "/projects/{project_id}/members/{user_id}", "project", ADMIN),
     Case("POST", "/invitations", "project", ADMIN, invitation("project", "{project_id}")),
+    # Этап 3: статусы.
+    Case("GET", "/teams/{team_id}/states", "team", MEMBER),
+    Case(
+        "POST",
+        "/teams/{team_id}/states",
+        "team",
+        ADMIN,
+        {"name": "Ревью", "type": "started", "color": "#000000"},
+    ),
+    Case("PATCH", "/states/{state_id}", "state", ADMIN, {"color": "#111111"}),
+    Case("DELETE", "/states/{state_id}", "state", ADMIN),
+    # Задачи.
+    Case("GET", "/tasks?workspace_id={workspace_id}", "workspace", GUEST),
+    Case("POST", "/tasks", "team", MEMBER, {"title": "В бэклог", "team_id": "{team_id}"}),
+    Case("POST", "/tasks", "project", MEMBER, {"title": "В проект", "project_id": "{project_id}"}),
+    Case("GET", "/tasks/{task_id}", "task", VIEWER),
+    Case("PATCH", "/tasks/{task_id}", "task", MEMBER, {"title": "Новое название"}),
+    Case("DELETE", "/tasks/{task_id}", "task", MEMBER),
+    Case("POST", "/tasks/{task_id}/restore", "task", ADMIN),
+    Case("POST", "/tasks/{task_id}/move", "task", MEMBER, {"position": "top"}),
+    Case("GET", "/tasks/{task_id}/subtasks", "task", VIEWER),
+    Case(
+        "POST",
+        "/tasks/{task_id}/relations",
+        "task",
+        MEMBER,
+        {"type": "relates_to", "target_id": "{other_task_id}"},
+    ),
+    Case("DELETE", "/tasks/{task_id}/relations/{relation_id}", "task", MEMBER),
+    Case("PUT", "/tasks/{task_id}/labels", "task", MEMBER, {"label_ids": []}),
+    Case("GET", "/tasks/{task_id}/activities", "task", VIEWER),
+    Case("GET", "/tasks/{task_id}/comments", "task", VIEWER),
+    Case("POST", "/tasks/{task_id}/comments", "task", MEMBER, {"body": "Комментарий"}),
+    # Метки.
+    Case("GET", "/labels?workspace_id={workspace_id}", "workspace", GUEST),
+    Case(
+        "POST",
+        "/labels",
+        "workspace",
+        MEMBER,
+        {"workspace_id": "{workspace_id}", "name": "bug", "color": "#ff0000"},
+    ),
+    Case(
+        "POST",
+        "/labels",
+        "team",
+        MEMBER,
+        {
+            "workspace_id": "{workspace_id}",
+            "team_id": "{team_id}",
+            "name": "ui",
+            "color": "#ff0000",
+        },
+    ),
+    Case("PATCH", "/labels/{label_id}", "label", MEMBER, {"color": "#00ff00"}),
+    Case("DELETE", "/labels/{label_id}", "label", MEMBER),
 ]
 
 
@@ -144,6 +224,23 @@ class World:
             project_id=project["id"],
             project_role="member",
         )
+        task = await create_task(owner, project_id=project["id"])
+        other = await create_task(owner, project_id=project["id"], title="Соседняя")
+        relation = await owner.post(
+            f"{API}/tasks/{task['id']}/relations", json={"type": "blocks", "target_id": other["id"]}
+        )
+        assert relation.status_code == 201, relation.text
+        label = await owner.post(
+            f"{API}/labels",
+            json={
+                "workspace_id": workspace["id"],
+                "team_id": team["id"],
+                "name": "backend",
+                "color": "#000000",
+            },
+        )
+        assert label.status_code == 201, label.text
+        states = await team_states(owner, team["id"])
         self.ids = {
             "workspace_id": workspace["id"],
             "team_id": team["id"],
@@ -152,6 +249,12 @@ class World:
             # Alias: путь реальных маршрутов участников называет параметр `user_id`,
             # а не `spare_id` — приведение к именам маршрутов нужно тесту покрытия ниже.
             "user_id": str(spare),
+            "task_id": task["id"],
+            "other_task_id": other["id"],
+            "relation_id": relation.json()["id"],
+            "label_id": label.json()["id"],
+            # Удаляемый статус — без задач и не статус по умолчанию.
+            "state_id": states["Canceled"]["id"],
         }
 
     async def actor(self, on: AccessTarget | None, role: EffectiveRole | None) -> AsyncClient:
@@ -163,7 +266,7 @@ class World:
             return client
 
         user_id = await user_id_of(self._session, email)
-        workspace_role, extra = self._shape(on, role)
+        workspace_role, extra = self._shape(SHAPE_LEVEL[on], role)
         await grant(
             self._session,
             user_id=user_id,
@@ -204,7 +307,7 @@ async def test_permission_matrix(case: Case, sign_up: SignUp, db_session: AsyncS
         denied = await call(await world.actor(case.on, below))
         assert denied.status_code == 403, denied.text
         assert denied.json()["error"]["code"] == "insufficient_role"
-    elif case.on != "workspace":
+    elif SHAPE_LEVEL[case.on] != "workspace":
         # Гость workspace без членства на этом уровне объекта не видит.
         hidden = await call(await world.actor("workspace", GUEST))
         assert hidden.status_code == 404, hidden.text
@@ -224,13 +327,28 @@ def test_matrix_covers_every_org_route() -> None:
     covered = {(case.method, case.path.split("?")[0]) for case in CASES}
     public = {("GET", "/invitations/token/{token}"), ("POST", "/invitations/token/{token}/accept")}
     # Проверяются отдельно: список своих и создание не привязаны к объекту,
-    # отзыв приглашения — в test_invitations.
+    # отзыв приглашения — в test_invitations, комментарии (автор или admin) — в
+    # test_comments, входящие уведомления — только свои, в test_notifications.
     special = {
         ("GET", "/workspaces"),
         ("POST", "/workspaces"),
         ("DELETE", "/invitations/{invitation_id}"),
+        ("PATCH", "/comments/{comment_id}"),
+        ("DELETE", "/comments/{comment_id}"),
+        ("GET", "/me/notifications"),
+        ("POST", "/me/notifications/{notification_id}/read"),
     }
-    prefixes = ("/workspaces", "/teams", "/projects", "/invitations")
+    prefixes = (
+        "/workspaces",
+        "/teams",
+        "/projects",
+        "/invitations",
+        "/states",
+        "/tasks",
+        "/labels",
+        "/comments",
+        "/me/notifications",
+    )
     http_methods = {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
 
     paths = json.loads(dump())["paths"]
