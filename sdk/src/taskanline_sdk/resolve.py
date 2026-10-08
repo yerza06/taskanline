@@ -173,7 +173,9 @@ class Resolver:
             if state.name.casefold() == name.casefold() or str(state.id) == name:
                 return state
         known = [state.name for state in states]
-        key = next((t.key for t in self._teams or [] if t.id == team_id), None)
+        key = None
+        with contextlib.suppress(TasKanLineError):
+            key = next((t.key for t in await self.teams() if t.id == team_id), None)
         where = f" в команде {key}" if key else ""
         raise ResolveError(
             "not_found",

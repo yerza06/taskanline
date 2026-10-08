@@ -3,7 +3,14 @@ name = "taskanline-mcp"
 description = "MCP-сервер TasKanLine"
 requires-python = ">=3.13,<3.14"
 dynamic = ["version"]
-dependencies = ["taskanline-sdk",]
+dependencies = [
+    "mcp>=2.3,<3",
+    "uvicorn>=0.32",
+    "taskanline-sdk",
+]
+
+[project.scripts]
+tkl-mcp = "taskanline_mcp.app:main"
 
 [build-system]
 requires = ["hatchling"]
