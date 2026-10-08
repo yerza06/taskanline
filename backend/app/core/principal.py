@@ -54,6 +54,7 @@ async def get_principal(
     # Импорты внутри функции: модули зависят от core, и обратная связь на уровне
     # модуля замкнула бы импорт в кольцо.
     from app.modules.auth.token_service import ApiTokenService
+    from app.modules.instance.service import InstanceService
     from app.modules.users.service import UserService
 
     header = request.headers.get("authorization")
@@ -63,6 +64,7 @@ async def get_principal(
             raise _invalid_token()
         token = await ApiTokenService(session).resolve(hash_token(raw_token))
         user = await UserService(session).get_active(token.user_id)
+        await InstanceService(session).check_maintenance(user.role)
         return Principal(
             user_id=user.id,
             instance_role=user.role,
@@ -79,6 +81,7 @@ async def get_principal(
 
     user_id = decode_access_token(cookie)
     user = await UserService(session).get_active(user_id)
+    await InstanceService(session).check_maintenance(user.role)
     # У человека в браузере scope не ограничивается: ограничивать сессию нечем и незачем.
     return Principal(
         user_id=user.id,

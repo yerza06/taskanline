@@ -234,9 +234,6 @@ class TestMail:
 
 
 class TestInvite:
-    def test_ttl_defaults_to_seven_days(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        assert build_valid(monkeypatch).invite.ttl_days == 7
-
-    def test_ttl_must_be_positive(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_attempts_must_be_positive(self, monkeypatch: pytest.MonkeyPatch) -> None:
         with pytest.raises(ValidationError):
-            build_valid(monkeypatch, INVITE__TTL_DAYS="0")
+            build_valid(monkeypatch, INVITE__ATTEMPTS="0")

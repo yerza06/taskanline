@@ -16,7 +16,8 @@ class Notification(Base):
     __tablename__ = "notifications"
     __table_args__ = (
         CheckConstraint(
-            "type IN ('mentioned', 'assigned', 'commented', 'state_changed')", name="type"
+            "type IN ('mentioned', 'assigned', 'commented', 'state_changed', 'ownership_granted')",
+            name="type",
         ),
         Index(
             "idx_notifications_inbox",

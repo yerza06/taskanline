@@ -38,6 +38,7 @@ from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine  # noqa: E402
 from sqlalchemy.pool import NullPool  # noqa: E402
 
@@ -121,6 +122,11 @@ async def db_session(db_connection: AsyncConnection) -> AsyncIterator[AsyncSessi
         bind=db_connection,
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
+    )
+    # Миграция закрывает регистрацию (`invite_only`), а тесты заводят людей через
+    # `sign_up`. Открываем её в транзакции теста; проверки режимов меняют его сами.
+    await db_connection.execute(
+        text("UPDATE instance_settings SET registration_mode = 'open' WHERE id = 1")
     )
     try:
         yield session

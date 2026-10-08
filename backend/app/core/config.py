@@ -185,9 +185,12 @@ class MailSettings(BaseModel):
 
 
 class InvitationSettings(BaseModel):
-    """Приглашения. Переменные с префиксом `INVITE__`."""
+    """Приглашения. Переменные с префиксом `INVITE__`.
 
-    ttl_days: int = Field(default=7, ge=1)
+    Срок жизни приглашения — в `instance_settings` (админ-панель): у одной величины
+    не должно быть двух источников.
+    """
+
     # Лимит на POST /invitations с одного адреса: приглашение — это письмо на чужой
     # ящик, и без лимита инстанс превращается в рассыльщик спама.
     attempts: int = Field(default=30, ge=1)

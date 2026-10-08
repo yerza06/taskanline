@@ -46,6 +46,15 @@ class AuthService:
     async def register(
         self, data: RegisterRequest, *, user_agent: str | None, ip: str | None
     ) -> tuple[User, SessionTokens]:
+        # Импорт внутри: модуль instance зависит от core, а не от auth, но держим
+        # верхний уровень auth свободным от чужих модулей, как и в остальных сервисах.
+        from app.modules.instance.service import InstanceService
+
+        await self._users.lock_bootstrap()
+        # Пустой инстанс открыт всегда: по умолчанию регистрация закрыта, а приглашать
+        # ещё некому. Первый зарегистрировавшийся получит superadmin.
+        if await self._users.any_user_exists():
+            await InstanceService(self._session).check_registration(data.email)
         user, tokens = await self.create_account(data, user_agent=user_agent, ip=ip)
         await self._session.commit()
         return user, tokens
@@ -90,6 +99,10 @@ class AuthService:
 
         if user is None or not password_matches or not user.is_active:
             raise ApiError(401, "invalid_credentials", "Неверный адрес или пароль")
+
+        from app.modules.instance.service import InstanceService
+
+        await InstanceService(self._session).check_maintenance(user.role)
 
         user.last_seen_at = datetime.now(UTC)
         tokens = await self._issue_session(user, user_agent=user_agent, ip=ip)
