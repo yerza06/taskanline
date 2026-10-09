@@ -9,7 +9,7 @@ FRONT := frontend_client
 
 .DEFAULT_GOAL := help
 .PHONY: help install env run db-up db-down db-logs stack-up stack-down \
-        test test-back test-front test-e2e lint format api-types \
+        test test-back test-front test-e2e docs-screenshots lint format api-types \
         migrate migration migrate-down history create-user
 
 help: ## Показать список команд
@@ -63,6 +63,9 @@ test-front: ## Тесты веб-клиента. Аргументы: make test-f
 
 test-e2e: ## Сценарии А–В в браузере (Playwright, своя база taskanline_e2e; нужен make db-up)
 	cd $(FRONT) && bun run test:e2e
+
+docs-screenshots: ## Пересобрать скриншоты docs/guide/images (Playwright, база taskanline_e2e; нужен make db-up)
+	cd $(FRONT) && bun run docs:screenshots
 
 lint: ## Линтеры и проверка типов на обеих половинах
 	uv run ruff check .
