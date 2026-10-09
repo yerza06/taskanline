@@ -11,6 +11,7 @@ export AUTH__COOKIE_SECURE=false AUTH__REGISTER_ATTEMPTS=1000 AUTH__LOGIN_ATTEMP
 export APP__ENVIRONMENT=ci APP__PUBLIC_URL=http://localhost:5174
 export CORS__ORIGINS=http://localhost:5174 MAILER__BACKEND=console LOG__LEVEL=INFO
 
-uv run python frontend_client/e2e/reset_db.py
+uv run python frontend_client/e2e/reset_db.py reset
 uv run alembic -c backend/alembic.ini upgrade head
+uv run python frontend_client/e2e/reset_db.py open
 exec uv run python -m app.main > frontend_client/e2e/.server.log 2>&1

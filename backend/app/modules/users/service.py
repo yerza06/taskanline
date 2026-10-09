@@ -1,7 +1,9 @@
 """Бизнес-правила вокруг пользователя."""
 
+import secrets
 from collections.abc import Collection, Sequence
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -48,3 +50,32 @@ class UserService:
             user.updated_at = datetime.now(UTC)
         await self._session.commit()
         return user
+
+    # --- Для админ-панели: права проверяет вызывающий -----------------------------
+
+    async def search(self, **filters: Any) -> Sequence[User]:
+        return await self._users.search(**filters)
+
+    async def status_counts(self) -> dict[str, int]:
+        return await self._users.status_counts()
+
+    async def active_superadmins_locked(self) -> list[UUID]:
+        return await self._users.active_superadmins_locked()
+
+    async def anonymize(self, user: User) -> None:
+        """Удаление — анонимизация: задачи и комментарии сохраняют автора-заглушку.
+
+        Пароль заменяется случайным хешем, адрес — недоставляемой заглушкой: войти
+        под удалённой учётной записью нельзя, а адрес освобождается для новой.
+        """
+        from app.core.security import hash_password
+
+        now = datetime.now(UTC)
+        user.email = f"deleted-{user.id}@deleted.invalid"
+        user.full_name = "Удалённый пользователь"
+        user.avatar_url = None
+        user.password_hash = hash_password(secrets.token_urlsafe(32))
+        user.is_active = False
+        user.deleted_at = now
+        user.updated_at = now
+        await self._session.flush()

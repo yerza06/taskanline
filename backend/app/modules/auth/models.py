@@ -8,13 +8,13 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import CHAR, CheckConstraint, ForeignKey, Index, String, Text, Uuid, func
+from sqlalchemy import CHAR, CheckConstraint, ForeignKey, Index, String, Text, Uuid, func, text
 from sqlalchemy.dialects.postgresql import TIMESTAMP
 from sqlalchemy.orm import Mapped, mapped_column
 from uuid6 import uuid7
 
 from app.core.database import Base
-from app.core.enums import TokenScope
+from app.core.enums import LoginKind, TokenScope
 
 
 class RefreshToken(Base):
@@ -61,6 +61,58 @@ class ApiToken(Base):
     # а запись на каждый запрос агента — заметная нагрузка.
     last_used_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
     revoked_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PasswordResetToken(Base):
+    """Ссылка на смену пароля. Сам токен уходит только в письме; здесь — хеш."""
+
+    __tablename__ = "password_reset_tokens"
+    __table_args__ = (
+        Index("idx_reset_token", "token_hash", unique=True),
+        Index("idx_reset_user", "user_id", text("created_at DESC")),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid7)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    token_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    # Заполнен, когда сброс запустил администратор, а не сам человек.
+    requested_by: Mapped[UUID | None] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="SET NULL")
+    )
+    expires_at: Mapped[datetime] = mapped_column(TIMESTAMP(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class LoginEvent(Base):
+    """Получение сессии: вход, регистрация, принятие приглашения, сброс пароля.
+
+    Не `refresh_tokens`: ротация каждые четверть часа дала бы десятки «входов» на одну
+    сессию, а карточке пользователя нужны именно входы.
+    """
+
+    __tablename__ = "login_events"
+    __table_args__ = (
+        CheckConstraint(
+            "kind IN ('password', 'registration', 'invitation', 'password_reset')", name="kind"
+        ),
+        Index("idx_login_events_user", "user_id", text("created_at DESC")),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=uuid7)
+    user_id: Mapped[UUID] = mapped_column(
+        Uuid, ForeignKey("users.id", ondelete="CASCADE"), nullable=False
+    )
+    kind: Mapped[LoginKind] = mapped_column(String(16), nullable=False)
+    ip: Mapped[str | None] = mapped_column(Text)
+    user_agent: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
     )

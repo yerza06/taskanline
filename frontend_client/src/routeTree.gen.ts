@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthedRouteImport } from './routes/_authed'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthedIndexRouteImport } from './routes/_authed.index'
@@ -17,6 +18,7 @@ import { Route as AuthedOnboardingRouteImport } from './routes/_authed.onboardin
 import { Route as AuthedProfileRouteImport } from './routes/_authed.profile'
 import { Route as AuthedTokensRouteImport } from './routes/_authed.tokens'
 import { Route as InviteTokenRouteImport } from './routes/invite.$token'
+import { Route as ResetPasswordTokenRouteImport } from './routes/reset-password.$token'
 import { Route as AuthedWWorkspaceRouteImport } from './routes/_authed.w.$workspace'
 import { Route as AuthedWWorkspaceIndexRouteImport } from './routes/_authed.w.$workspace.index'
 import { Route as AuthedWWorkspaceInboxRouteImport } from './routes/_authed.w.$workspace.inbox'
@@ -29,6 +31,11 @@ import { Route as AuthedWWorkspaceTeamKeySettingsRouteImport } from './routes/_a
 
 const AuthedRoute = AuthedRouteImport.update({
   id: '/_authed',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -64,6 +71,11 @@ const AuthedTokensRoute = AuthedTokensRouteImport.update({
 const InviteTokenRoute = InviteTokenRouteImport.update({
   id: '/invite/$token',
   path: '/invite/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordTokenRoute = ResetPasswordTokenRouteImport.update({
+  id: '/reset-password/$token',
+  path: '/reset-password/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedWWorkspaceRoute = AuthedWWorkspaceRouteImport.update({
@@ -118,12 +130,14 @@ const AuthedWWorkspaceTeamKeySettingsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthedIndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/onboarding': typeof AuthedOnboardingRoute
   '/profile': typeof AuthedProfileRoute
   '/tokens': typeof AuthedTokensRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/w/$workspace': typeof AuthedWWorkspaceRouteWithChildren
   '/w/$workspace/inbox': typeof AuthedWWorkspaceInboxRoute
   '/w/$workspace/members': typeof AuthedWWorkspaceMembersRoute
@@ -135,12 +149,14 @@ export interface FileRoutesByFullPath {
   '/w/$workspace/team/$key/': typeof AuthedWWorkspaceTeamKeyIndexRoute
 }
 export interface FileRoutesByTo {
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/onboarding': typeof AuthedOnboardingRoute
   '/profile': typeof AuthedProfileRoute
   '/tokens': typeof AuthedTokensRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/': typeof AuthedIndexRoute
   '/w/$workspace/inbox': typeof AuthedWWorkspaceInboxRoute
   '/w/$workspace/members': typeof AuthedWWorkspaceMembersRoute
@@ -154,12 +170,14 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_authed': typeof AuthedRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/_authed/onboarding': typeof AuthedOnboardingRoute
   '/_authed/profile': typeof AuthedProfileRoute
   '/_authed/tokens': typeof AuthedTokensRoute
   '/invite/$token': typeof InviteTokenRoute
+  '/reset-password/$token': typeof ResetPasswordTokenRoute
   '/_authed/': typeof AuthedIndexRoute
   '/_authed/w/$workspace': typeof AuthedWWorkspaceRouteWithChildren
   '/_authed/w/$workspace/inbox': typeof AuthedWWorkspaceInboxRoute
@@ -175,12 +193,14 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
     | '/register'
     | '/onboarding'
     | '/profile'
     | '/tokens'
     | '/invite/$token'
+    | '/reset-password/$token'
     | '/w/$workspace'
     | '/w/$workspace/inbox'
     | '/w/$workspace/members'
@@ -192,12 +212,14 @@ export interface FileRouteTypes {
     | '/w/$workspace/team/$key/'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/forgot-password'
     | '/login'
     | '/register'
     | '/onboarding'
     | '/profile'
     | '/tokens'
     | '/invite/$token'
+    | '/reset-password/$token'
     | '/'
     | '/w/$workspace/inbox'
     | '/w/$workspace/members'
@@ -210,12 +232,14 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/_authed'
+    | '/forgot-password'
     | '/login'
     | '/register'
     | '/_authed/onboarding'
     | '/_authed/profile'
     | '/_authed/tokens'
     | '/invite/$token'
+    | '/reset-password/$token'
     | '/_authed/'
     | '/_authed/w/$workspace'
     | '/_authed/w/$workspace/inbox'
@@ -230,9 +254,11 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
   RegisterRoute: typeof RegisterRoute
   InviteTokenRoute: typeof InviteTokenRoute
+  ResetPasswordTokenRoute: typeof ResetPasswordTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -242,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: ''
       fullPath: '/'
       preLoaderRoute: typeof AuthedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -291,6 +324,13 @@ declare module '@tanstack/react-router' {
       path: '/invite/$token'
       fullPath: '/invite/$token'
       preLoaderRoute: typeof InviteTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password/$token': {
+      id: '/reset-password/$token'
+      path: '/reset-password/$token'
+      fullPath: '/reset-password/$token'
+      preLoaderRoute: typeof ResetPasswordTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authed/w/$workspace': {
@@ -405,9 +445,11 @@ const AuthedRouteWithChildren =
 
 const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
   RegisterRoute: RegisterRoute,
   InviteTokenRoute: InviteTokenRoute,
+  ResetPasswordTokenRoute: ResetPasswordTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

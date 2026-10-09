@@ -334,6 +334,22 @@ class TaskRepository:
         )
         return (await self._session.scalars(stmt)).all()
 
+    # --- Для админ-панели: только числа, ни заголовков, ни описаний ------------------
+
+    async def live_counts_by_workspace(self, ids: Collection[UUID]) -> dict[UUID, int]:
+        if not ids:
+            return {}
+        rows = await self._session.execute(
+            select(Task.workspace_id, func.count())
+            .where(Task.workspace_id.in_(ids), Task.deleted_at.is_(None))
+            .group_by(Task.workspace_id)
+        )
+        return dict(rows.tuples().all())
+
+    async def live_count(self) -> int:
+        stmt = select(func.count()).select_from(Task).where(Task.deleted_at.is_(None))
+        return int(await self._session.scalar(stmt) or 0)
+
 
 def _conditions(filters: TaskFilters) -> list[ColumnElement[bool]]:
     conditions: list[ColumnElement[bool]] = [

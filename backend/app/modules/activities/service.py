@@ -4,6 +4,7 @@
 иначе при сбое история разойдётся с данными.
 """
 
+from collections.abc import Collection
 from datetime import datetime
 from typing import Any
 from uuid import UUID
@@ -65,3 +66,6 @@ class ActivityService:
             next_cursor=next_cursor,
             has_more=has_more,
         )
+
+    async def last_at_by_workspace(self, ids: Collection[UUID]) -> dict[UUID, datetime]:
+        return await self._activities.last_at_by_workspace(ids)

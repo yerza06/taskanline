@@ -96,6 +96,9 @@ def create_app() -> FastAPI:
     # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
+    # Неудачные подтверждения паролем в админке подряд, по пользователю. В памяти, как
+    # и лимиты: Redis появится на этапе 9, а сбросу счётчика при перезапуске это не мешает.
+    app.state.reauth_failures = {}
     # Почтальон, как и лимитер, принадлежит приложению: тесты подменяют его своим.
     app.state.mailer = build_mailer(settings.mailer)
     app.add_middleware(CsrfMiddleware)
@@ -139,6 +142,8 @@ def run() -> None:
         host=settings.server.host,
         port=settings.server.port,
         reload=settings.server.reload,
+        proxy_headers=True,
+        forwarded_allow_ips=settings.server.forwarded_allow_ips,
         # Свой конфиг логов uvicorn не навязывает: формат уже задал structlog,
         # иначе одно и то же событие печатается дважды в двух разных форматах.
         log_config=None,

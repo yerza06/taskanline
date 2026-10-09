@@ -15,6 +15,7 @@ from app.core.config import get_settings
 from app.core.enums import (
     InvitationScope,
     InvitationStatus,
+    LoginKind,
     ProjectRole,
     TeamRole,
     WorkspaceRole,
@@ -77,6 +78,11 @@ class InvitationService:
         self._teams = TeamService(session)
         self._projects = ProjectService(session)
 
+    async def _ttl_days(self) -> int:
+        from app.modules.instance.service import InstanceService
+
+        return (await InstanceService(self._session).get()).invitation_ttl_days
+
     async def create(
         self, principal: Principal, data: InvitationCreate
     ) -> tuple[Invitation, MailMessage]:
@@ -109,7 +115,7 @@ class InvitationService:
                 role=data.role,
                 token_hash=hash_token(raw),
                 invited_by=principal.user_id,
-                expires_at=now + timedelta(days=get_settings().invite.ttl_days),
+                expires_at=now + timedelta(days=await self._ttl_days()),
             )
         except IntegrityError as error:
             await self._session.rollback()
@@ -274,6 +280,7 @@ class InvitationService:
             ),
             user_agent=user_agent,
             ip=ip,
+            kind=LoginKind.INVITATION,
         )
 
     async def _grant(self, invitation: Invitation, user_id: UUID) -> None:

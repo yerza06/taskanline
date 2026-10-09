@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test'
 
 /**
- * Сценарии А–В из видения — против настоящего бэкенда.
+ * Сценарии А–В и Е из видения — против настоящего бэкенда.
  *
  * Бэкенд поднимается на своей базе `taskanline_e2e` (пересоздаётся перед прогоном)
  * и порту 8001, клиент — Vite на 5174 с прокси на него: обычной разработке на
@@ -34,6 +34,15 @@ export default defineConfig({
       timeout: 60_000,
       reuseExistingServer: false,
       env: { API_TARGET: 'http://127.0.0.1:8001' },
+    },
+    {
+      // Админ-панель на своём порту того же хоста: cookie сессии общие с клиентом.
+      command: 'bunx vite --port 5176 --strictPort',
+      cwd: '../frontend_admin',
+      url: 'http://localhost:5176',
+      timeout: 60_000,
+      reuseExistingServer: false,
+      env: { API_TARGET: 'http://127.0.0.1:8001', VITE_CLIENT_URL: 'http://localhost:5174' },
     },
   ],
 })

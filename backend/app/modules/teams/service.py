@@ -1,6 +1,6 @@
 """Бизнес-правила команд и участия в них."""
 
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -161,3 +161,11 @@ class TeamService:
         if found is None:
             raise ApiError(404, "member_not_found", "Участник не найден")
         return found
+
+    # --- Для админ-панели ---------------------------------------------------------
+
+    async def counts_by_workspace(self, ids: Collection[UUID]) -> dict[UUID, int]:
+        return await self._teams.counts_by_workspace(ids)
+
+    async def count(self) -> int:
+        return await self._teams.count()

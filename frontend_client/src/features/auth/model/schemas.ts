@@ -24,5 +24,14 @@ export const registerSchema = z.object({
     .max(128, 'Пароль длиннее 128 символов'),
 })
 
+export const forgotSchema = z.object({ email })
+
+export const resetSchema = z.object({
+  password: z
+    .string()
+    .min(8, 'Пароль короче восьми символов')
+    .max(128, 'Пароль длиннее 128 символов'),
+})
+
 export type LoginValues = z.infer<typeof loginSchema>
 export type RegisterValues = z.infer<typeof registerSchema>

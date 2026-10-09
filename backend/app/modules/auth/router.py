@@ -6,11 +6,12 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, Request, Response
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
 from app.core.database import get_session
+from app.core.mail import Mailer, get_mailer, send_safely
 from app.core.principal import CurrentPrincipal, WritePrincipal
 from app.core.rate_limit import rate_limit
 from app.modules.auth.cookies import clear_session_cookies, set_session_cookies
@@ -23,7 +24,13 @@ from app.modules.auth.schemas import (
 )
 from app.modules.auth.service import AuthService
 from app.modules.auth.token_service import ApiTokenService
-from app.modules.users.schemas import LoginRequest, RegisterRequest, UserRead
+from app.modules.users.schemas import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    UserRead,
+)
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -81,6 +88,46 @@ async def login(
 ) -> SessionResponse:
     user, tokens = await service.login(
         payload,
+        user_agent=request.headers.get("user-agent"),
+        ip=_client_ip(request),
+    )
+    set_session_cookies(response, access=tokens.access, refresh=tokens.refresh)
+    return SessionResponse(user=UserRead.model_validate(user))
+
+
+@router.post(
+    "/forgot-password",
+    status_code=204,
+    dependencies=[Depends(rate_limit("forgot", _login_limit))],
+)
+async def forgot_password(
+    payload: ForgotPasswordRequest,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+    background: BackgroundTasks,
+    mailer: Annotated[Mailer, Depends(get_mailer)],
+) -> None:
+    """Письмо со ссылкой на смену пароля. Ответ одинаковый, есть такой адрес или нет:
+    по нему нельзя перебрать, кто зарегистрирован на инстансе."""
+    message = await service.forgot_password(payload.email)
+    if message is not None:
+        background.add_task(send_safely, mailer, message)
+
+
+@router.post(
+    "/reset-password",
+    response_model=SessionResponse,
+    dependencies=[Depends(rate_limit("reset", _login_limit))],
+)
+async def reset_password(
+    payload: ResetPasswordRequest,
+    request: Request,
+    response: Response,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+) -> SessionResponse:
+    """Новый пароль по ссылке из письма: прежние сессии гаснут, открывается новая."""
+    user, tokens = await service.reset_password(
+        payload.token,
+        payload.password,
         user_agent=request.headers.get("user-agent"),
         ip=_client_ip(request),
     )

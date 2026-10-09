@@ -904,3 +904,11 @@ class TaskService:
             )
             for task in tasks
         }
+
+    # --- Для админ-панели: только числа -------------------------------------------
+
+    async def counts_by_workspace(self, ids: Collection[UUID]) -> dict[UUID, int]:
+        return await self._tasks.live_counts_by_workspace(ids)
+
+    async def count(self) -> int:
+        return await self._tasks.live_count()

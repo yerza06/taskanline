@@ -70,6 +70,7 @@ export const NOTIFICATION_LABELS: Record<NotificationType, string> = {
   assigned: 'назначил(а) на вас',
   commented: 'прокомментировал(а)',
   state_changed: 'сменил(а) статус',
+  ownership_granted: 'как администратор сервера назначил(а) себя владельцем пространства',
 }
 
 export const RELATION_LABELS: Record<string, string> = {

@@ -133,6 +133,8 @@ class NotificationType(StrEnum):
     ASSIGNED = "assigned"
     COMMENTED = "commented"
     STATE_CHANGED = "state_changed"
+    # Администратор инстанса назначил себя владельцем — узнают все прежние владельцы.
+    OWNERSHIP_GRANTED = "ownership_granted"
 
 
 class ViewScope(StrEnum):
@@ -169,3 +171,42 @@ class SortDirection(StrEnum):
 class ViewLayout(StrEnum):
     LIST = "list"
     BOARD = "board"
+
+
+class RegistrationMode(StrEnum):
+    """Кто может зарегистрироваться сам, без приглашения."""
+
+    INVITE_ONLY = "invite_only"
+    OPEN = "open"
+    DOMAIN_ALLOWLIST = "domain_allowlist"
+
+
+class AuditAction(StrEnum):
+    """Что сделал администратор. Журнал — `admin_audit_log`."""
+
+    ADMIN_LOGIN = "admin_login"
+    REAUTH_FAILED = "reauth_failed"
+    USER_BLOCKED = "user_blocked"
+    USER_UNBLOCKED = "user_unblocked"
+    USER_ROLE_CHANGED = "user_role_changed"
+    USER_DELETED = "user_deleted"
+    PASSWORD_RESET_SENT = "password_reset_sent"
+    TOKEN_REVOKED = "token_revoked"
+    WORKSPACE_DELETED = "workspace_deleted"
+    WORKSPACE_OWNERSHIP_GRANTED = "workspace_ownership_granted"
+    SETTINGS_CHANGED = "settings_changed"
+
+
+class AuditTarget(StrEnum):
+    USER = "user"
+    WORKSPACE = "workspace"
+    SETTINGS = "settings"
+
+
+class LoginKind(StrEnum):
+    """Как человек получил сессию — для журнала входов в карточке пользователя."""
+
+    PASSWORD = "password"
+    REGISTRATION = "registration"
+    INVITATION = "invitation"
+    PASSWORD_RESET = "password_reset"

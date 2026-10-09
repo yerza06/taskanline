@@ -43,6 +43,11 @@ function LoginPage() {
       }
     >
       <LoginForm redirectTo={redirect} />
+      <p className="mt-4 text-center text-sm">
+        <Link to="/forgot-password" className="text-fg-muted underline underline-offset-4">
+          Забыли пароль?
+        </Link>
+      </p>
     </AuthLayout>
   )
 }

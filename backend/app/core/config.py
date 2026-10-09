@@ -152,6 +152,10 @@ class ServerSettings(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8000
     reload: bool = Field(default=False, description="Автоперезапуск: только для разработки")
+    # Чьим заголовкам X-Forwarded-For верить. За nginx без этого и журнал аудита, и
+    # лимиты видят адрес прокси, а не человека. "*" — только когда до API нельзя
+    # достучаться мимо прокси.
+    forwarded_allow_ips: str = "127.0.0.1"
 
 
 class LogSettings(BaseModel):
@@ -185,9 +189,12 @@ class MailSettings(BaseModel):
 
 
 class InvitationSettings(BaseModel):
-    """Приглашения. Переменные с префиксом `INVITE__`."""
+    """Приглашения. Переменные с префиксом `INVITE__`.
 
-    ttl_days: int = Field(default=7, ge=1)
+    Срок жизни приглашения — в `instance_settings` (админ-панель): у одной величины
+    не должно быть двух источников.
+    """
+
     # Лимит на POST /invitations с одного адреса: приглашение — это письмо на чужой
     # ящик, и без лимита инстанс превращается в рассыльщик спама.
     attempts: int = Field(default=30, ge=1)
