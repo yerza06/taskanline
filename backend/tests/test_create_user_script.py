@@ -1,6 +1,10 @@
 """Скрипт `backend/scripts/create_user.py`: заведение пользователя напрямую в базе."""
 
+import os
+import subprocess
+import sys
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -8,7 +12,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.enums import InstanceRole
 from app.core.security import verify_password
 from app.modules.users.repository import UserRepository
-from scripts.create_user import NewUser, ask_new_user, create_user
+from scripts.create_user import ROLE_CHOICES, NewUser, ask_new_user, create_user
+
+SCRIPT = Path(__file__).resolve().parents[1] / "scripts" / "create_user.py"
 
 
 class TestCreateUser:
@@ -82,7 +88,7 @@ def feed(monkeypatch: pytest.MonkeyPatch, answers: list[str], passwords: list[st
 
 class TestAskNewUser:
     def test_collects_answers(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        feed(monkeypatch, ["  ivan@example.com ", "Иван", "admin"], ["secret-pass"] * 2)
+        feed(monkeypatch, ["  ivan@example.com ", "Иван", "3"], ["secret-pass"] * 2)
 
         assert ask_new_user() == NewUser(
             email="ivan@example.com",
@@ -99,8 +105,8 @@ class TestAskNewUser:
         assert new_user is not None
         assert new_user.role == InstanceRole.USER
 
-    def test_unknown_role_is_asked_again(self, monkeypatch: pytest.MonkeyPatch) -> None:
-        feed(monkeypatch, ["ivan@example.com", "Иван", "root", "Support"], ["secret-pass"] * 2)
+    def test_role_outside_the_list_is_asked_again(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        feed(monkeypatch, ["ivan@example.com", "Иван", "admin", "0", "9", "2"], ["secret-pass"] * 2)
 
         new_user = ask_new_user()
 
@@ -111,3 +117,30 @@ class TestAskNewUser:
         feed(monkeypatch, ["ivan@example.com", "Иван", ""], ["secret-pass", "other-pass"])
 
         assert ask_new_user() is None
+
+    def test_roles_are_numbered_from_user_up(self) -> None:
+        """Первым идёт безопасный вариант по умолчанию, дальше — по возрастанию прав."""
+        assert ROLE_CHOICES == (
+            InstanceRole.USER,
+            InstanceRole.SUPPORT,
+            InstanceRole.ADMIN,
+            InstanceRole.SUPERADMIN,
+        )
+
+
+class TestLaunch:
+    def test_reads_root_env_from_any_directory(self, tmp_path: Path) -> None:
+        """Настройки ищут `.env` от текущего каталога — скрипт обязан перейти в корень сам."""
+        probe = (
+            f"import runpy, os; runpy.run_path({str(SCRIPT)!r}, run_name='probe')"
+            "['enter_project_root'](); "
+            "from app.core.config import get_settings; get_settings(); print(os.getcwd())"
+        )
+        env = {k: v for k, v in os.environ.items() if not k.startswith(("DB__", "SECURITY__"))}
+
+        result = subprocess.run(
+            [sys.executable, "-c", probe], cwd=tmp_path, env=env, capture_output=True, text=True
+        )
+
+        assert result.returncode == 0, result.stderr
+        assert result.stdout.strip() == str(SCRIPT.parents[2])

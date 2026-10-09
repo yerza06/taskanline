@@ -49,7 +49,7 @@ stack-down: ## Остановить весь стек
 	$(FULL_STACK) down
 
 create-user: ## Добавить пользователя в базу (спросит email, имя, роль и пароль)
-	cd backend && uv run python -m scripts.create_user
+	uv run python backend/scripts/create_user.py
 
 # --- Тесты и проверки --------------------------------------------------------
 

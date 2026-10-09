@@ -1,10 +1,13 @@
 """Заведение пользователя напрямую в базе, без регистрации через API.
 
     make create-user
-    # или: cd backend && uv run python -m scripts.create_user
+    # или из любого каталога: uv run python backend/scripts/create_user.py
 
-Скрипт по очереди спрашивает адрес, имя, роль инстанса и пароль. Пароль вводится
-через getpass дважды: на экран и в историю shell он не попадает.
+API для этого запускать не нужно — нужна только база из `.env`. Скрипт сам переходит
+в корень репозитория: настройки ищут `.env` от текущего каталога.
+
+Скрипт по очереди спрашивает адрес, имя, роль инстанса (номером из списка) и пароль.
+Пароль вводится через getpass дважды: на экран и в историю shell он не попадает.
 
 Скрипт не смотрит на политику регистрации инстанса и не выдаёт сессию: доступ к
 нему равносилен доступу к серверу, как у `app.admin`. Проверки адреса, длины
@@ -13,8 +16,10 @@
 
 import asyncio
 import getpass
+import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -25,7 +30,16 @@ from app.core.security import hash_password
 from app.modules.users.repository import UserRepository
 from app.modules.users.schemas import RegisterRequest
 
-_ROLES = " | ".join(InstanceRole)
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+# Номер в списке — индекс плюс один. Первым идёт значение по умолчанию, дальше —
+# по возрастанию прав: случайный Enter не должен дать кому-то superadmin.
+ROLE_CHOICES = (
+    InstanceRole.USER,
+    InstanceRole.SUPPORT,
+    InstanceRole.ADMIN,
+    InstanceRole.SUPERADMIN,
+)
 
 
 @dataclass(frozen=True)
@@ -37,15 +51,17 @@ class NewUser:
 
 
 def ask_role() -> InstanceRole:
-    """Роль инстанса; пустой ввод — `user`, неизвестная роль — спросить ещё раз."""
+    """Роль инстанса номером из списка; пустой ввод — первая, иное — спросить ещё раз."""
+    print("Роль:")
+    for number, role in enumerate(ROLE_CHOICES, start=1):
+        print(f"  {number}) {role}")
     while True:
-        answer = input(f"Роль ({_ROLES}) [user]: ").strip().lower()
+        answer = input(f"Номер роли [1-{len(ROLE_CHOICES)}, по умолчанию 1]: ").strip()
         if not answer:
-            return InstanceRole.USER
-        try:
-            return InstanceRole(answer)
-        except ValueError:
-            print(f"Нет такой роли: {answer}", file=sys.stderr)
+            return ROLE_CHOICES[0]
+        if answer.isdigit() and 1 <= int(answer) <= len(ROLE_CHOICES):
+            return ROLE_CHOICES[int(answer) - 1]
+        print(f"Нужен номер от 1 до {len(ROLE_CHOICES)}", file=sys.stderr)
 
 
 def ask_new_user() -> NewUser | None:
@@ -87,6 +103,11 @@ async def create_user(
     return 0
 
 
+def enter_project_root() -> None:
+    """Переходит в корень репозитория, где лежит `.env` (см. `Settings.model_config`)."""
+    os.chdir(PROJECT_ROOT)
+
+
 async def _run(new_user: NewUser) -> int:
     async with get_sessionmaker()() as session:
         code = await create_user(
@@ -104,6 +125,7 @@ async def _run(new_user: NewUser) -> int:
 
 def main() -> None:
     """Точка входа. Отделена от `create_user`, чтобы тест не поднимал настоящую сессию."""
+    enter_project_root()
     try:
         new_user = ask_new_user()
     except (KeyboardInterrupt, EOFError):

@@ -177,8 +177,9 @@ uv run python -m app.admin grant --email ivan@example.com --role superadmin
 ```
 
 Завести пользователя в обход регистрации и её политики — `make create-user` (скрипт
-`backend/scripts/create_user.py`). Флагов у него нет: email, имя и роль спрашивает `input()`,
-пароль — `getpass()`; проверки те же, что у `POST /auth/register`.
+`backend/scripts/create_user.py`). API не нужен, только база из `.env`. Флагов нет: email, имя
+и роль (номером из списка) спрашивает `input()`, пароль — `getpass()`; проверки те же, что у
+`POST /auth/register`.
 
 ## Права внутри workspace
 
