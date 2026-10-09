@@ -23,7 +23,9 @@ os.environ["DB__NAME"] = (
     os.environ.get("TEST_DB_NAME") or _DOTENV.get("TEST_DB_NAME") or "taskanline_test"
 )
 os.environ.setdefault("SECURITY__SECRET_KEY", "test-secret-key-at-least-32-characters-long")
-os.environ.setdefault("APP__ENVIRONMENT", "ci")
+# Не setdefault: `local` из окружения разработчика включил бы цветной журнал, а тесты CLI
+# отделяют строки сервера от вывода команды по JSON. Тесты режимов ставят своё значение сами.
+os.environ["APP__ENVIRONMENT"] = "ci"
 # Тестовый клиент ходит по http, а Secure-cookie по нему не отправляется.
 # В продакшене флаг обязан быть включён — здесь он мешал бы проверять сессию.
 os.environ["AUTH__COOKIE_SECURE"] = "false"
