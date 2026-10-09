@@ -20,6 +20,8 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 Environment = Literal["local", "ci", "production"]
 LogLevel = Literal["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
 CookieSameSite = Literal["lax", "strict", "none"]
+MailBackend = Literal["console", "smtp"]
+MailSecurity = Literal["none", "starttls", "tls"]
 
 # Список через запятую или JSON-массив — оба варианта встречаются в compose и CI.
 StringList = Annotated[list[str], NoDecode]
@@ -150,12 +152,53 @@ class ServerSettings(BaseModel):
     host: str = "0.0.0.0"
     port: int = 8000
     reload: bool = Field(default=False, description="Автоперезапуск: только для разработки")
+    # Чьим заголовкам X-Forwarded-For верить. За nginx без этого и журнал аудита, и
+    # лимиты видят адрес прокси, а не человека. "*" — только когда до API нельзя
+    # достучаться мимо прокси.
+    forwarded_allow_ips: str = "127.0.0.1"
 
 
 class LogSettings(BaseModel):
     """Логи. Переменные с префиксом `LOG__`."""
 
     level: LogLevel = "INFO"
+
+
+class MailSettings(BaseModel):
+    """Исходящая почта. Переменные с префиксом `MAILER__`.
+
+    Не `MAIL__`: эта переменная уже занята системой (`pam_mail`/Debian выставляют
+    `MAIL=/var/spool/mail/<user>` при входе в shell), и `pydantic-settings` для
+    вложенной модели отдаёт точному совпадению имени переменной приоритет перед
+    разбором `__`-делимитера — `uv run pytest` в обычном терминале падал бы ещё
+    до чтения `.env`.
+
+    `console` пишет письмо в лог вместо отправки: на машине разработчика SMTP нет,
+    а ссылку из приглашения всё равно нужно где-то увидеть.
+    """
+
+    backend: MailBackend = "console"
+    host: str = "localhost"
+    port: int = Field(default=587, ge=1, le=65535)
+    username: str = ""
+    password: SecretStr = SecretStr("")
+    # starttls — порт 587, tls — порт 465, none — только для локального релея.
+    security: MailSecurity = "starttls"
+    from_address: str = "TasKanLine <noreply@localhost>"
+    timeout_seconds: int = Field(default=10, ge=1)
+
+
+class InvitationSettings(BaseModel):
+    """Приглашения. Переменные с префиксом `INVITE__`.
+
+    Срок жизни приглашения — в `instance_settings` (админ-панель): у одной величины
+    не должно быть двух источников.
+    """
+
+    # Лимит на POST /invitations с одного адреса: приглашение — это письмо на чужой
+    # ящик, и без лимита инстанс превращается в рассыльщик спама.
+    attempts: int = Field(default=30, ge=1)
+    window_seconds: int = Field(default=3600, ge=1)
 
 
 class Settings(BaseSettings):
@@ -174,6 +217,8 @@ class Settings(BaseSettings):
     cors: CorsSettings = Field(default_factory=CorsSettings)
     server: ServerSettings = Field(default_factory=ServerSettings)
     log: LogSettings = Field(default_factory=LogSettings)
+    mailer: MailSettings = Field(default_factory=MailSettings)
+    invite: InvitationSettings = Field(default_factory=InvitationSettings)
 
 
 @lru_cache

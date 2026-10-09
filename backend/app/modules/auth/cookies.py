@@ -46,3 +46,36 @@ def clear_session_cookies(response: Response) -> None:
             domain=domain,
             path="/",
         )
+    clear_reauth_cookie(response)
+
+
+# Подтверждение паролем нужно только разделу админки — туда и ограничен путь cookie.
+REAUTH_COOKIE = "tkl_reauth"
+REAUTH_PATH = "/api/v1/admin"
+
+
+def set_reauth_cookie(response: Response, token: str, *, max_age: int) -> None:
+    settings = get_settings()
+    response.set_cookie(
+        REAUTH_COOKIE,
+        token,
+        max_age=max_age,
+        httponly=True,
+        secure=settings.auth.cookie_secure,
+        # Strict: опасное действие не должно подтверждаться переходом с чужого сайта.
+        samesite="strict",
+        domain=settings.auth.cookie_domain or None,
+        path=REAUTH_PATH,
+    )
+
+
+def clear_reauth_cookie(response: Response) -> None:
+    settings = get_settings()
+    response.delete_cookie(
+        REAUTH_COOKIE,
+        httponly=True,
+        secure=settings.auth.cookie_secure,
+        samesite="strict",
+        domain=settings.auth.cookie_domain or None,
+        path=REAUTH_PATH,
+    )

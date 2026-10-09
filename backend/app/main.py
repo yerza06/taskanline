@@ -5,8 +5,9 @@
 вторым списком в CMD контейнера значит однажды их рассинхронизировать.
 """
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 from typing import Literal
 
 import structlog
@@ -21,11 +22,13 @@ from app import __version__
 from app.api import api_router
 from app.core.config import get_settings
 from app.core.csrf import CsrfMiddleware
-from app.core.database import get_engine
+from app.core.database import get_engine, get_sessionmaker
 from app.core.errors import register_exception_handlers
 from app.core.logging import configure_logging
+from app.core.mail import build_mailer
 from app.core.middleware import RequestIdMiddleware
 from app.core.rate_limit import InMemoryRateLimiter
+from app.modules.idempotency.service import IdempotencyService
 
 logger = structlog.get_logger(__name__)
 
@@ -46,14 +49,43 @@ async def _database_is_reachable() -> bool:
     return True
 
 
+# Как часто удалять ответы `Idempotency-Key` старше суток.
+IDEMPOTENCY_PURGE_INTERVAL = 3600
+
+
+async def _purge_idempotency_keys() -> None:
+    """При старте и раз в час. Отдельного воркера не нужно: это один DELETE по индексу.
+
+    Сбой очистки только логируется: от неё зависит размер таблицы, а не ответы API.
+    """
+    while True:
+        try:
+            async with get_sessionmaker()() as session:
+                removed = await IdempotencyService(session).purge_expired()
+            logger.info("idempotency.purged", removed=removed)
+        except Exception as error:
+            logger.warning("idempotency.purge_failed", error=type(error).__name__)
+        await asyncio.sleep(IDEMPOTENCY_PURGE_INTERVAL)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI) -> AsyncIterator[None]:
-    yield
-    await get_engine().dispose()
+    purge = asyncio.create_task(_purge_idempotency_keys())
+    try:
+        yield
+    finally:
+        purge.cancel()
+        with suppress(asyncio.CancelledError):
+            await purge
+        await get_engine().dispose()
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
+    # До configure_logging(): она переустанавливает процессоры structlog, и лог,
+    # отправленный после неё, тестовый `capture_logs` уже не увидит.
+    if settings.app.environment == "production" and settings.mailer.backend == "console":
+        logger.warning("mail.console_in_production")
     configure_logging(settings.log.level, json_output=settings.app.environment != "local")
 
     app = FastAPI(
@@ -64,6 +96,11 @@ def create_app() -> FastAPI:
     # Лимитер привязан к приложению, а не к модулю: состояние окна не должно
     # переезжать между экземплярами приложения.
     app.state.rate_limiter = InMemoryRateLimiter()
+    # Неудачные подтверждения паролем в админке подряд, по пользователю. В памяти, как
+    # и лимиты: Redis появится на этапе 9, а сбросу счётчика при перезапуске это не мешает.
+    app.state.reauth_failures = {}
+    # Почтальон, как и лимитер, принадлежит приложению: тесты подменяют его своим.
+    app.state.mailer = build_mailer(settings.mailer)
     app.add_middleware(CsrfMiddleware)
     # RequestIdMiddleware добавляется последним и потому отрабатывает первым:
     # отказ по CSRF должен попадать в лог с тем же request_id, что и запрос.
@@ -105,6 +142,8 @@ def run() -> None:
         host=settings.server.host,
         port=settings.server.port,
         reload=settings.server.reload,
+        proxy_headers=True,
+        forwarded_allow_ips=settings.server.forwarded_allow_ips,
         # Свой конфиг логов uvicorn не навязывает: формат уже задал structlog,
         # иначе одно и то же событие печатается дважды в двух разных форматах.
         log_config=None,

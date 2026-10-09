@@ -12,8 +12,22 @@ from app.core.config import get_settings
 from app.core.database import Base
 
 # Модели импортируются здесь, чтобы автогенерация видела все таблицы.
+from app.modules.activities import models as activities_models  # noqa: F401
+from app.modules.admin import models as admin_models  # noqa: F401
 from app.modules.auth import models as auth_models  # noqa: F401
+from app.modules.comments import models as comments_models  # noqa: F401
+from app.modules.idempotency import models as idempotency_models  # noqa: F401
+from app.modules.instance import models as instance_models  # noqa: F401
+from app.modules.invitations import models as invitations_models  # noqa: F401
+from app.modules.labels import models as labels_models  # noqa: F401
+from app.modules.notifications import models as notifications_models  # noqa: F401
+from app.modules.projects import models as projects_models  # noqa: F401
+from app.modules.states import models as states_models  # noqa: F401
+from app.modules.tasks import models as tasks_models  # noqa: F401
+from app.modules.teams import models as teams_models  # noqa: F401
 from app.modules.users import models as users_models  # noqa: F401
+from app.modules.views import models as views_models  # noqa: F401
+from app.modules.workspaces import models as workspaces_models  # noqa: F401
 
 config = context.config
 

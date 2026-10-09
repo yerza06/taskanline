@@ -54,6 +54,7 @@ async def get_principal(
     # Импорты внутри функции: модули зависят от core, и обратная связь на уровне
     # модуля замкнула бы импорт в кольцо.
     from app.modules.auth.token_service import ApiTokenService
+    from app.modules.instance.service import InstanceService
     from app.modules.users.service import UserService
 
     header = request.headers.get("authorization")
@@ -63,6 +64,7 @@ async def get_principal(
             raise _invalid_token()
         token = await ApiTokenService(session).resolve(hash_token(raw_token))
         user = await UserService(session).get_active(token.user_id)
+        await InstanceService(session).check_maintenance(user.role)
         return Principal(
             user_id=user.id,
             instance_role=user.role,
@@ -79,6 +81,7 @@ async def get_principal(
 
     user_id = decode_access_token(cookie)
     user = await UserService(session).get_active(user_id)
+    await InstanceService(session).check_maintenance(user.role)
     # У человека в браузере scope не ограничивается: ограничивать сессию нечем и незачем.
     return Principal(
         user_id=user.id,
@@ -100,3 +103,28 @@ def require_write(principal: CurrentPrincipal) -> Principal:
 
 
 WritePrincipal = Annotated[Principal, Depends(require_write)]
+
+
+async def get_optional_principal(
+    request: Request, session: Annotated[AsyncSession, Depends(get_session)]
+) -> Principal | None:
+    """Для эндпоинтов, открытых и анониму.
+
+    Нет учётных данных — аноним. Есть, но негодные — 401, а не аноним: иначе
+    клиент с протухшим access-токеном не узнает, что пора обновить сессию, и
+    человека с учётной записью попросят зарегистрироваться заново.
+    """
+    # Импорт внутри функции по той же причине, что и выше — против кольца импортов.
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    has_credentials = request.headers.get("authorization") or any(
+        name in request.cookies
+        for name in (settings.auth.access_cookie_name, settings.auth.refresh_cookie_name)
+    )
+    if not has_credentials:
+        return None
+    return await get_principal(request, session)
+
+
+OptionalPrincipal = Annotated[Principal | None, Depends(get_optional_principal)]

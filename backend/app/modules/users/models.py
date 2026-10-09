@@ -46,3 +46,6 @@ class User(Base):
         TIMESTAMP(timezone=True), nullable=False, server_default=func.now()
     )
     last_seen_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))
+    # Удаление — анонимизация: строка остаётся, чтобы задачи и комментарии не теряли
+    # автора. Отметка отличает удалённого от просто заблокированного.
+    deleted_at: Mapped[datetime | None] = mapped_column(TIMESTAMP(timezone=True))

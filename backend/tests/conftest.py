@@ -23,7 +23,9 @@ os.environ["DB__NAME"] = (
     os.environ.get("TEST_DB_NAME") or _DOTENV.get("TEST_DB_NAME") or "taskanline_test"
 )
 os.environ.setdefault("SECURITY__SECRET_KEY", "test-secret-key-at-least-32-characters-long")
-os.environ.setdefault("APP__ENVIRONMENT", "ci")
+# Не setdefault: `local` из окружения разработчика включил бы цветной журнал, а тесты CLI
+# отделяют строки сервера от вывода команды по JSON. Тесты режимов ставят своё значение сами.
+os.environ["APP__ENVIRONMENT"] = "ci"
 # Тестовый клиент ходит по http, а Secure-cookie по нему не отправляется.
 # В продакшене флаг обязан быть включён — здесь он мешал бы проверять сессию.
 os.environ["AUTH__COOKIE_SECURE"] = "false"
@@ -38,12 +40,14 @@ from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from fastapi import FastAPI  # noqa: E402
 from httpx import ASGITransport, AsyncClient  # noqa: E402
+from sqlalchemy import text  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncConnection, AsyncSession, create_async_engine  # noqa: E402
 from sqlalchemy.pool import NullPool  # noqa: E402
 
 from app.core.config import get_settings  # noqa: E402
 from app.core.database import get_engine, get_session  # noqa: E402
 from app.main import create_app  # noqa: E402
+from tests.org import RecordingMailer  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
 
@@ -121,6 +125,11 @@ async def db_session(db_connection: AsyncConnection) -> AsyncIterator[AsyncSessi
         expire_on_commit=False,
         join_transaction_mode="create_savepoint",
     )
+    # Миграция закрывает регистрацию (`invite_only`), а тесты заводят людей через
+    # `sign_up`. Открываем её в транзакции теста; проверки режимов меняют его сами.
+    await db_connection.execute(
+        text("UPDATE instance_settings SET registration_mode = 'open' WHERE id = 1")
+    )
     try:
         yield session
     finally:
@@ -140,8 +149,14 @@ async def close_engine_connections() -> AsyncIterator[None]:
 
 
 @pytest.fixture
-def app(db_session: AsyncSession) -> Iterator[FastAPI]:
+def mailer() -> RecordingMailer:
+    return RecordingMailer()
+
+
+@pytest.fixture
+def app(db_session: AsyncSession, mailer: RecordingMailer) -> Iterator[FastAPI]:
     application = create_app()
+    application.state.mailer = mailer
 
     async def _override_get_session() -> AsyncIterator[AsyncSession]:
         yield db_session
@@ -159,6 +174,42 @@ async def client(app: FastAPI) -> AsyncIterator[AsyncClient]:
 
 
 CSRF_HEADERS = {"X-Requested-With": "XMLHttpRequest"}
+
+
+@pytest.fixture
+async def new_client(app: FastAPI) -> AsyncIterator[Callable[[], AsyncClient]]:
+    """Фабрика клиентов: у каждого свои cookie и свой адрес.
+
+    Свой адрес — ради лимитов: окно регистрации считается по IP, и пятый
+    пользователь в одном тесте иначе получил бы 429.
+    """
+    clients: list[AsyncClient] = []
+
+    def _new() -> AsyncClient:
+        transport = ASGITransport(app=app, client=(f"10.0.0.{len(clients) + 1}", 50000))
+        client = AsyncClient(transport=transport, base_url="http://test", headers=CSRF_HEADERS)
+        clients.append(client)
+        return client
+
+    yield _new
+    for client in clients:
+        await client.aclose()
+
+
+@pytest.fixture
+def sign_up(new_client: Callable[[], AsyncClient]) -> Callable[..., Awaitable[AsyncClient]]:
+    """Зарегистрированный пользователь со своей cookie-сессией."""
+
+    async def _sign_up(email: str, full_name: str = "Участник") -> AsyncClient:
+        client = new_client()
+        response = await client.post(
+            "/api/v1/auth/register",
+            json={"email": email, "password": "correct horse battery", "full_name": full_name},
+        )
+        assert response.status_code == 201, response.text
+        return client
+
+    return _sign_up
 
 
 @pytest.fixture

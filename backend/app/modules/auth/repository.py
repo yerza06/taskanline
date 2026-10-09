@@ -8,7 +8,7 @@ from sqlalchemy import or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import TokenScope
-from app.modules.auth.models import ApiToken, RefreshToken
+from app.modules.auth.models import ApiToken, LoginEvent, PasswordResetToken, RefreshToken
 
 
 class RefreshTokenRepository:
@@ -124,3 +124,58 @@ class ApiTokenRepository:
     async def revoke(self, token: ApiToken, *, at: datetime) -> None:
         token.revoked_at = at
         await self._session.flush()
+
+    async def list_all(self, user_id: UUID) -> Sequence[ApiToken]:
+        """Все токены, включая отозванные, — для карточки пользователя в админке."""
+        result = await self._session.scalars(
+            select(ApiToken).where(ApiToken.user_id == user_id).order_by(ApiToken.created_at.desc())
+        )
+        return result.all()
+
+    async def revoke_all_for_user(self, user_id: UUID, *, at: datetime) -> None:
+        await self._session.execute(
+            update(ApiToken)
+            .where(ApiToken.user_id == user_id, ApiToken.revoked_at.is_(None))
+            .values(revoked_at=at)
+        )
+
+
+class LoginEventRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, event: LoginEvent) -> None:
+        self._session.add(event)
+        await self._session.flush()
+
+    async def recent(self, user_id: UUID, *, limit: int) -> Sequence[LoginEvent]:
+        result = await self._session.scalars(
+            select(LoginEvent)
+            .where(LoginEvent.user_id == user_id)
+            .order_by(LoginEvent.created_at.desc(), LoginEvent.id.desc())
+            .limit(limit)
+        )
+        return result.all()
+
+
+class PasswordResetRepository:
+    def __init__(self, session: AsyncSession) -> None:
+        self._session = session
+
+    async def add(self, token: PasswordResetToken) -> None:
+        self._session.add(token)
+        await self._session.flush()
+
+    async def get_by_hash(self, token_hash: str) -> PasswordResetToken | None:
+        token: PasswordResetToken | None = await self._session.scalar(
+            select(PasswordResetToken).where(PasswordResetToken.token_hash == token_hash)
+        )
+        return token
+
+    async def invalidate_unused(self, user_id: UUID, *, at: datetime) -> None:
+        """Новая ссылка гасит прежние: действует только последняя."""
+        await self._session.execute(
+            update(PasswordResetToken)
+            .where(PasswordResetToken.user_id == user_id, PasswordResetToken.used_at.is_(None))
+            .values(used_at=at)
+        )

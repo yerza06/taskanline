@@ -1,4 +1,6 @@
 @import 'tailwindcss';
+/* Токены темы и шрифты — общие с админ-панелью: frontend_shared/tokens.css. */
+@import '../../frontend_shared/tokens.css';
 
 /*
  * Тёмная тема переключается классом `dark` на <html>, а не только медиазапросом:
@@ -7,44 +9,6 @@
  */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/*
- * Семантические токены вместо конкретных цветов в разметке: у компонента один класс
- * `bg-surface`, а не пара `bg-white dark:bg-slate-900`, и тем становится две, а не две
- * копии каждого экрана. На этапе 6 этот блок переезжает в общий файл,
- * который импортируют и frontend_client, и frontend_admin.
- */
-@theme inline {
-  --color-canvas: var(--canvas);
-  --color-surface: var(--surface);
-  --color-surface-hover: var(--surface-hover);
-  --color-border: var(--border);
-  --color-fg: var(--fg);
-  --color-fg-muted: var(--fg-muted);
-  --color-accent: var(--accent);
-
-  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
-}
-
-:root {
-  --canvas: #f8fafc;
-  --surface: #ffffff;
-  --surface-hover: #f1f5f9;
-  --border: #e2e8f0;
-  --fg: #0f172a;
-  --fg-muted: #576275;
-  --accent: #2563eb;
-}
-
-.dark {
-  --canvas: #0b1120;
-  --surface: #111827;
-  --surface-hover: #1f2937;
-  --border: #1f2937;
-  --fg: #e5e7eb;
-  --fg-muted: #9aa7b8;
-  --accent: #60a5fa;
-}
-
 html,
 body,
 #root {
@@ -52,6 +16,19 @@ body,
 }
 
 body {
+  font-family: var(--font-sans);
   background-color: var(--canvas);
   color: var(--fg);
+}
+
+/*
+ * Нативные переключатели, флажки и ползунки браузер красит своим акцентом —
+ * в стандартной теме это синий. Единственное место, где в интерфейсе мог бы
+ * остаться цвет, и его видно сразу.
+ */
+input[type='radio'],
+input[type='checkbox'],
+input[type='range'],
+progress {
+  accent-color: var(--fg);
 }

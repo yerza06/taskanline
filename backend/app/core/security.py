@@ -26,6 +26,9 @@ _ALPHABET = string.digits + string.ascii_letters
 
 ALGORITHM = "HS256"
 ACCESS_TOKEN_TYPE = "access"
+REAUTH_TOKEN_TYPE = "reauth"
+# Окно подтверждения паролем для опасных действий админ-панели.
+REAUTH_TTL = timedelta(minutes=15)
 
 # 32 байта в base62 занимают 43 символа; префикс `tkl_` доводит длину до 47.
 _TOKEN_BYTES = 32
@@ -79,6 +82,40 @@ def decode_access_token(token: str) -> UUID:
         raise ApiError(401, "invalid_token", "Сессия недействительна") from error
 
 
+def issue_reauth_token(user_id: UUID, *, now: datetime | None = None) -> tuple[str, datetime]:
+    """Отметка «пароль только что введён заново». Подписана тем же ключом, но другого
+    типа: access-токен ею не притворится, и наоборот."""
+    settings = get_settings()
+    issued_at = now or datetime.now(UTC)
+    expires_at = issued_at + REAUTH_TTL
+    payload = {
+        "sub": str(user_id),
+        "typ": REAUTH_TOKEN_TYPE,
+        "iat": int(issued_at.timestamp()),
+        "exp": int(expires_at.timestamp()),
+    }
+    token = jwt.encode(
+        payload, settings.security.secret_key.get_secret_value(), algorithm=ALGORITHM
+    )
+    return token, expires_at
+
+
+def reauth_expiry(token: str | None, user_id: UUID) -> datetime | None:
+    """До какого момента действует подтверждение этого пользователя; `None` — его нет."""
+    if not token:
+        return None
+    settings = get_settings()
+    try:
+        payload = jwt.decode(
+            token, settings.security.secret_key.get_secret_value(), algorithms=[ALGORITHM]
+        )
+    except jwt.PyJWTError:
+        return None
+    if payload.get("typ") != REAUTH_TOKEN_TYPE or payload.get("sub") != str(user_id):
+        return None
+    return datetime.fromtimestamp(int(payload["exp"]), UTC)
+
+
 def _base62(raw: bytes, length: int) -> str:
     number = int.from_bytes(raw, "big")
     chars: list[str] = []
@@ -96,6 +133,11 @@ def generate_pat() -> str:
 def generate_refresh_token() -> str:
     """Refresh-токен непрозрачный, а не JWT: его нужно уметь отзывать поимённо."""
     return _base62(secrets.token_bytes(_TOKEN_BYTES), _TOKEN_LENGTH)
+
+
+def generate_invitation_token() -> str:
+    """Токен ссылки из письма: такой же непрозрачный случайный, как refresh-токен."""
+    return generate_refresh_token()
 
 
 def hash_token(token: str) -> str:

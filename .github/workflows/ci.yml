@@ -25,7 +25,7 @@ jobs:
       - run: uv sync --frozen
       - run: uv run ruff check .
       - run: uv run ruff format --check .
-      - run: uv run mypy backend
+      - run: uv run mypy backend sdk cli mcp
 
   backend-tests:
     name: Тесты бэкенда
@@ -79,6 +79,99 @@ jobs:
       - run: bun run test
       - run: bun run build
 
+  frontend_admin:
+    name: Админ-панель
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend_admin
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - run: bun run lint
+      - run: bun run typecheck
+      - run: bun run test
+      - run: bun run build
+
+  e2e:
+    name: Сценарии А–В и Е в браузере
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: taskanline
+          POSTGRES_PASSWORD: taskanline
+          POSTGRES_DB: taskanline
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U taskanline"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Базу taskanline_e2e пересоздаёт e2e/backend.sh перед каждым прогоном.
+      DB__USER: taskanline
+      DB__PASSWORD: taskanline
+      DB__HOST: localhost
+      DB__PORT: 5432
+      SECURITY__SECRET_KEY: ci-secret-key-at-least-32-characters-long
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: uv sync --frozen
+      - run: bun install --frozen-lockfile
+        working-directory: frontend_client
+      # Сценарий Е поднимает и админ-панель — ей нужны свои зависимости.
+      - run: bun install --frozen-lockfile
+        working-directory: frontend_admin
+      - run: bunx playwright install --with-deps chromium
+        working-directory: frontend_client
+      - run: bun run test:e2e
+        working-directory: frontend_client
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-traces
+          path: frontend_client/test-results
+
+  api-types:
+    name: Типы клиента из OpenAPI
+    runs-on: ubuntu-latest
+    env:
+      # Настройки нужны, чтобы собрать приложение и снять с него схему;
+      # к базе выгрузка не ходит.
+      DB__USER: taskanline
+      DB__PASSWORD: taskanline
+      DB__NAME: taskanline
+      SECURITY__SECRET_KEY: ci-secret-key-at-least-32-characters-long
+      APP__ENVIRONMENT: ci
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: ${{ env.UV_VERSION }}
+          enable-cache: true
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: uv sync --frozen
+      - run: cd frontend_client && bun install --frozen-lockfile
+      - run: cd frontend_admin && bun install --frozen-lockfile
+      - run: make api-types
+      - name: Схема и типы разошлись
+        run: git diff --exit-code frontend_client/src/shared/api/schema.d.ts frontend_admin/src/shared/api/schema.d.ts
+
   docker-build:
     name: Сборка образов
     runs-on: ubuntu-latest
@@ -98,6 +191,14 @@ jobs:
         with:
           context: .
           file: frontend_client/Dockerfile
+          push: false
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: frontend_admin
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: frontend_admin/Dockerfile
           push: false
           cache-from: type=gha
           cache-to: type=gha,mode=max

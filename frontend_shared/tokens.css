@@ -1,0 +1,62 @@
+/*
+ * Токены темы — общие для frontend_client и frontend_admin (архитектура §4.4).
+ *
+ * Подключается из index.css каждого приложения после `@import 'tailwindcss'` и
+ * объявления варианта `dark`. Правка цвета — здесь, и она сразу в обоих приложениях.
+ */
+
+/*
+ * Семантические токены вместо конкретных цветов в разметке: у компонента один класс
+ * `bg-surface`, а не пара `bg-white dark:bg-slate-900`, и тем становится две, а не две
+ * копии каждого экрана.
+ */
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-hover: var(--surface-hover);
+  --color-border: var(--border);
+  --color-fg: var(--fg);
+  --color-fg-muted: var(--fg-muted);
+  --color-accent: var(--accent);
+  --color-accent-fg: var(--accent-fg);
+  --color-danger: var(--danger);
+  --color-danger-surface: var(--danger-surface);
+
+  /* Inter — весь интерфейс; Raleway — заголовки и название продукта. Оба
+     подключены пакетами @fontsource и лежат в сборке: инстанс за корпоративным
+     периметром не обязан достучаться до чужого CDN ради шрифта. */
+  --font-sans: 'Inter Variable', 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Raleway Variable', 'Raleway', ui-sans-serif, system-ui, sans-serif;
+}
+
+/*
+ * Палитра чёрно-белая: ни одного оттенка, только светлота. Акцент — это не цвет,
+ * а инверсия: залитая кнопка на фоне страницы. Разница между уровнями держится
+ * на границах и на светлоте подложки, поэтому менять их поодиночке нельзя.
+ */
+:root {
+  --canvas: #f6f6f6;
+  --surface: #ffffff;
+  --surface-hover: #ededed;
+  --border: #d6d6d6;
+  --fg: #101010;
+  --fg-muted: #5a5a5a;
+  --accent: #101010;
+  /* Текст на заливке акцентом: пара считана на контраст не ниже AA. */
+  --accent-fg: #ffffff;
+  --danger: #101010;
+  --danger-surface: #ebebeb;
+}
+
+.dark {
+  --canvas: #0b0b0b;
+  --surface: #141414;
+  --surface-hover: #1f1f1f;
+  --border: #303030;
+  --fg: #f2f2f2;
+  --fg-muted: #a1a1a1;
+  --accent: #f2f2f2;
+  --accent-fg: #0b0b0b;
+  --danger: #f2f2f2;
+  --danger-surface: #1f1f1f;
+}

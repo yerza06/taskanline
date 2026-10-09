@@ -9,10 +9,11 @@ FRONT := frontend_client
 
 .DEFAULT_GOAL := help
 .PHONY: help install env run db-up db-down db-logs stack-up stack-down \
-        test test-back test-front lint format migrate migration migrate-down history
+        test test-back test-front test-e2e lint format api-types \
+        migrate migration migrate-down history create-user
 
 help: ## Показать список команд
-	@grep -hE '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) \
+	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
 	| awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-13s\033[0m %s\n", $$1, $$2}'
 
 # --- Окружение ---------------------------------------------------------------
@@ -47,6 +48,9 @@ stack-up: env ## Собрать и поднять весь стек в конт�
 stack-down: ## Остановить весь стек
 	$(FULL_STACK) down
 
+create-user: ## Добавить пользователя в базу (спросит email, имя, роль и пароль)
+	uv run python backend/scripts/create_user.py
+
 # --- Тесты и проверки --------------------------------------------------------
 
 test: test-back test-front ## Прогнать все тесты
@@ -57,15 +61,23 @@ test-back: ## Тесты бэкенда. Аргументы: make test-back a="-
 test-front: ## Тесты веб-клиента. Аргументы: make test-front a="src/app"
 	cd $(FRONT) && bun run vitest run $(a)
 
+test-e2e: ## Сценарии А–В в браузере (Playwright, своя база taskanline_e2e; нужен make db-up)
+	cd $(FRONT) && bun run test:e2e
+
 lint: ## Линтеры и проверка типов на обеих половинах
 	uv run ruff check .
 	uv run ruff format --check .
-	uv run mypy backend
+	uv run mypy backend sdk cli mcp
 	cd $(FRONT) && bun run lint && bun run typecheck
 
 format: ## Отформатировать и починить автоисправимое
 	uv run ruff check --fix .
 	uv run ruff format .
+
+api-types: ## Пересобрать типы обоих фронтендов из OpenAPI бэкенда
+	uv run python -m app.openapi > $(FRONT)/openapi.json
+	cd $(FRONT) && bun run generate:api
+	cd frontend_admin && bun run generate:api
 
 # --- Миграции ----------------------------------------------------------------
 

@@ -1,4 +1,4 @@
-# Полный стек: PostgreSQL, API и веб-клиент за nginx.
+# Полный стек: PostgreSQL, API, веб-клиент и админ-панель за nginx.
 # Запуск из корня репозитория: docker compose -f deploy/docker-compose.yml up -d
 name: taskanline
 
@@ -35,6 +35,12 @@ services:
       APP__ENVIRONMENT: ${APP__ENVIRONMENT:-production}
       LOG__LEVEL: ${LOG__LEVEL:-INFO}
       CORS__ORIGINS: ${CORS__ORIGINS:-http://localhost:8080}
+      # API ходят только через nginx-контейнеры — их X-Forwarded-For и есть адрес
+      # человека в журнале аудита. Порт 8000 наружу на проде лучше не публиковать.
+      SERVER__FORWARDED_ALLOW_IPS: ${SERVER__FORWARDED_ALLOW_IPS:-*}
+      # Клиент и админка на разных хостах делят сессию через общий родительский домен:
+      # AUTH__COOKIE_DOMAIN=.example.com. На localhost:8080/8081 cookie и так общие.
+      AUTH__COOKIE_DOMAIN: ${AUTH__COOKIE_DOMAIN:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -48,6 +54,18 @@ services:
       dockerfile: frontend_client/Dockerfile
     ports:
       - "8080:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  frontend_admin:
+    build:
+      context: ..
+      dockerfile: frontend_admin/Dockerfile
+      args:
+        VITE_CLIENT_URL: ${APP__PUBLIC_URL:-http://localhost:8080}
+    ports:
+      - "8081:80"
     depends_on:
       - backend
     restart: unless-stopped

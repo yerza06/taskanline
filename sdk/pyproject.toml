@@ -3,14 +3,17 @@ name = "taskanline-sdk"
 description = "Python-клиент API TasKanLine, общий для CLI и MCP-сервера"
 requires-python = ">=3.13,<3.14"
 dynamic = ["version"]
-dependencies = []
+dependencies = [
+    "httpx>=0.28",
+    "pydantic>=2.10",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.version]
-path = "src/taskanline_sdk/__init__.py"
+path = "src/taskanline_sdk/_version.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/taskanline_sdk"]
