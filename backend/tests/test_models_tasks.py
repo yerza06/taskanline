@@ -214,24 +214,37 @@ def migration_db(migrated_database: None) -> Iterator[Config]:
     dsn = _dsn(TEST_DATABASE_URL)
     maintenance = dsn.rsplit("/", 1)[0] + "/postgres"
 
-    async def _recreate(drop_only: bool = False) -> None:
+    url = TEST_DATABASE_URL.rsplit("/", 1)[0] + "/" + MIGRATION_DB
+
+    # База создаётся только при первом прогоне, а дальше чистится пересозданием схемы:
+    # у пользователя тестов может не быть права CREATEDB, если базу завели заранее.
+    async def _create_if_missing() -> None:
         connection = await asyncpg.connect(maintenance)
         try:
-            await connection.execute(f'DROP DATABASE IF EXISTS "{MIGRATION_DB}" WITH (FORCE)')
-            if not drop_only:
+            exists = await connection.fetchval(
+                "SELECT 1 FROM pg_database WHERE datname = $1", MIGRATION_DB
+            )
+            if not exists:
                 await connection.execute(f'CREATE DATABASE "{MIGRATION_DB}"')
         finally:
             await connection.close()
 
-    asyncio.run(_recreate())
+    async def _reset() -> None:
+        connection = await asyncpg.connect(_dsn(url))
+        try:
+            await connection.execute("DROP SCHEMA IF EXISTS public CASCADE; CREATE SCHEMA public")
+        finally:
+            await connection.close()
+
+    asyncio.run(_create_if_missing())
+    asyncio.run(_reset())
     config = Config(str(BACKEND_DIR / "alembic.ini"))
-    url = TEST_DATABASE_URL.rsplit("/", 1)[0] + "/" + MIGRATION_DB
     config.set_main_option("sqlalchemy.url", url)
     config.attributes["database_url"] = url
     try:
         yield config
     finally:
-        asyncio.run(_recreate(drop_only=True))
+        asyncio.run(_reset())
 
 
 def test_migration_backfills_default_states(
