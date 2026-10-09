@@ -10,7 +10,7 @@ FRONT := frontend_client
 .DEFAULT_GOAL := help
 .PHONY: help install env run db-up db-down db-logs stack-up stack-down \
         test test-back test-front test-e2e lint format api-types \
-        migrate migration migrate-down history
+        migrate migration migrate-down history create-user
 
 help: ## Показать список команд
 	@grep -hE '^[a-zA-Z0-9_-]+:.*?## ' $(MAKEFILE_LIST) \
@@ -47,6 +47,9 @@ stack-up: env ## Собрать и поднять весь стек в конт�
 
 stack-down: ## Остановить весь стек
 	$(FULL_STACK) down
+
+create-user: ## Добавить пользователя в базу (спросит email, имя, роль и пароль)
+	uv run python backend/scripts/create_user.py
 
 # --- Тесты и проверки --------------------------------------------------------
 

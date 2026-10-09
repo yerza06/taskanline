@@ -66,7 +66,7 @@ ignore = [
 [tool.ruff.lint.isort]
 # Пакеты воркспейса установлены в окружение, и без этой строки ruff считает их
 # сторонними и перемешивает с fastapi.
-known-first-party = ["app", "tests", "sdk_tests", "cli_tests", "mcp_tests", "taskanline_sdk", "taskanline_cli", "taskanline_mcp"]
+known-first-party = ["app", "scripts", "tests", "sdk_tests", "cli_tests", "mcp_tests", "taskanline_sdk", "taskanline_cli", "taskanline_mcp"]
 # Каталог mcp/ в корне ruff принял бы за пакет проекта и спутал с библиотекой `mcp`.
 known-third-party = ["mcp"]
 
