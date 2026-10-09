@@ -1,21 +1,20 @@
 """Заведение пользователя напрямую в базе, без регистрации через API.
 
-    cd backend
-    uv run python -m scripts.create_user --email ivan@example.com --full-name "Иван Петров"
-    uv run python -m scripts.create_user --email root@example.com --full-name Root --role superadmin
+    make create-user
+    # или: cd backend && uv run python -m scripts.create_user
 
-Пароль спрашивается в терминале дважды и в историю shell не попадает. Флаг
-`--password` есть для автоматизации, но значение в нём видно в `ps` и в истории.
+Скрипт по очереди спрашивает адрес, имя, роль инстанса и пароль. Пароль вводится
+через getpass дважды: на экран и в историю shell он не попадает.
 
 Скрипт не смотрит на политику регистрации инстанса и не выдаёт сессию: доступ к
 нему равносилен доступу к серверу, как у `app.admin`. Проверки адреса, длины
 пароля и имени — те же, что у `POST /auth/register`.
 """
 
-import argparse
 import asyncio
 import getpass
 import sys
+from dataclasses import dataclass
 
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -26,24 +25,39 @@ from app.core.security import hash_password
 from app.modules.users.repository import UserRepository
 from app.modules.users.schemas import RegisterRequest
 
+_ROLES = " | ".join(InstanceRole)
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="scripts.create_user", description="Добавить пользователя в базу"
-    )
-    parser.add_argument("--email", required=True, help="Адрес нового пользователя")
-    parser.add_argument("--full-name", required=True, help="Имя, как его увидят коллеги")
-    parser.add_argument(
-        "--role",
-        type=InstanceRole,
-        choices=list(InstanceRole),
-        default=InstanceRole.USER,
-        help="Роль инстанса: superadmin | admin | support | user (по умолчанию user)",
-    )
-    parser.add_argument(
-        "--password", help="Пароль; без флага спрашивается в терминале — так безопаснее"
-    )
-    return parser
+
+@dataclass(frozen=True)
+class NewUser:
+    email: str
+    full_name: str
+    password: str
+    role: InstanceRole
+
+
+def ask_role() -> InstanceRole:
+    """Роль инстанса; пустой ввод — `user`, неизвестная роль — спросить ещё раз."""
+    while True:
+        answer = input(f"Роль ({_ROLES}) [user]: ").strip().lower()
+        if not answer:
+            return InstanceRole.USER
+        try:
+            return InstanceRole(answer)
+        except ValueError:
+            print(f"Нет такой роли: {answer}", file=sys.stderr)
+
+
+def ask_new_user() -> NewUser | None:
+    """Данные пользователя из терминала; None — если пароли не совпали."""
+    email = input("Email: ").strip()
+    full_name = input("Имя: ").strip()
+    role = ask_role()
+    password = getpass.getpass("Пароль: ")
+    if getpass.getpass("Пароль ещё раз: ") != password:
+        print("Пароли не совпадают", file=sys.stderr)
+        return None
+    return NewUser(email=email, full_name=full_name, password=password, role=role)
 
 
 async def create_user(
@@ -73,19 +87,14 @@ async def create_user(
     return 0
 
 
-def ask_password() -> str | None:
-    """Пароль с повтором; None — если ввод не совпал."""
-    password = getpass.getpass("Пароль: ")
-    if getpass.getpass("Ещё раз: ") != password:
-        print("Пароли не совпадают", file=sys.stderr)
-        return None
-    return password
-
-
-async def _run(args: argparse.Namespace, password: str) -> int:
+async def _run(new_user: NewUser) -> int:
     async with get_sessionmaker()() as session:
         code = await create_user(
-            session, email=args.email, full_name=args.full_name, password=password, role=args.role
+            session,
+            email=new_user.email,
+            full_name=new_user.full_name,
+            password=new_user.password,
+            role=new_user.role,
         )
         if code == 0:
             await session.commit()
@@ -95,11 +104,14 @@ async def _run(args: argparse.Namespace, password: str) -> int:
 
 def main() -> None:
     """Точка входа. Отделена от `create_user`, чтобы тест не поднимал настоящую сессию."""
-    args = build_parser().parse_args()
-    password = args.password if args.password is not None else ask_password()
-    if password is None:
+    try:
+        new_user = ask_new_user()
+    except (KeyboardInterrupt, EOFError):
+        print(file=sys.stderr)
+        raise SystemExit(1) from None
+    if new_user is None:
         raise SystemExit(1)
-    raise SystemExit(asyncio.run(_run(args, password)))
+    raise SystemExit(asyncio.run(_run(new_user)))
 
 
 if __name__ == "__main__":

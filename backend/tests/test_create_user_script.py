@@ -1,12 +1,14 @@
 """Скрипт `backend/scripts/create_user.py`: заведение пользователя напрямую в базе."""
 
+from collections.abc import Iterator
+
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.enums import InstanceRole
 from app.core.security import verify_password
 from app.modules.users.repository import UserRepository
-from scripts.create_user import build_parser, create_user
+from scripts.create_user import NewUser, ask_new_user, create_user
 
 
 class TestCreateUser:
@@ -70,17 +72,42 @@ class TestCreateUser:
         assert await UserRepository(db_session).get_by_email(email.lower()) is None
 
 
-class TestParser:
-    def test_role_defaults_to_user(self) -> None:
-        args = build_parser().parse_args(["--email", "ivan@example.com", "--full-name", "Иван"])
+def feed(monkeypatch: pytest.MonkeyPatch, answers: list[str], passwords: list[str]) -> None:
+    """Подменяет терминал: input() и getpass() отдают ответы по очереди."""
+    answer_iter: Iterator[str] = iter(answers)
+    password_iter: Iterator[str] = iter(passwords)
+    monkeypatch.setattr("builtins.input", lambda _prompt="": next(answer_iter))
+    monkeypatch.setattr("getpass.getpass", lambda _prompt="": next(password_iter))
 
-        assert args.role == InstanceRole.USER
-        assert args.password is None
 
-    def test_rejects_unknown_role(self) -> None:
-        with pytest.raises(SystemExit):
-            build_parser().parse_args(["--email", "a@b.c", "--full-name", "А", "--role", "root"])
+class TestAskNewUser:
+    def test_collects_answers(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        feed(monkeypatch, ["  ivan@example.com ", "Иван", "admin"], ["secret-pass"] * 2)
 
-    def test_requires_email(self) -> None:
-        with pytest.raises(SystemExit):
-            build_parser().parse_args(["--full-name", "Иван"])
+        assert ask_new_user() == NewUser(
+            email="ivan@example.com",
+            full_name="Иван",
+            password="secret-pass",
+            role=InstanceRole.ADMIN,
+        )
+
+    def test_empty_role_means_user(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        feed(monkeypatch, ["ivan@example.com", "Иван", ""], ["secret-pass"] * 2)
+
+        new_user = ask_new_user()
+
+        assert new_user is not None
+        assert new_user.role == InstanceRole.USER
+
+    def test_unknown_role_is_asked_again(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        feed(monkeypatch, ["ivan@example.com", "Иван", "root", "Support"], ["secret-pass"] * 2)
+
+        new_user = ask_new_user()
+
+        assert new_user is not None
+        assert new_user.role == InstanceRole.SUPPORT
+
+    def test_mismatched_passwords(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        feed(monkeypatch, ["ivan@example.com", "Иван", ""], ["secret-pass", "other-pass"])
+
+        assert ask_new_user() is None

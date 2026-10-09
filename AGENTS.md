@@ -176,12 +176,9 @@ compose; при занятом 5432 менять оба. `AUTH__COOKIE_SECURE` �
 uv run python -m app.admin grant --email ivan@example.com --role superadmin
 ```
 
-Завести пользователя в обход регистрации и её политики — скрипт `backend/scripts/create_user.py`
-(пароль спрашивает в терминале, проверки те же, что у `POST /auth/register`):
-
-```bash
-cd backend && uv run python -m scripts.create_user --email ivan@example.com --full-name "Иван" --role user
-```
+Завести пользователя в обход регистрации и её политики — `make create-user` (скрипт
+`backend/scripts/create_user.py`). Флагов у него нет: email, имя и роль спрашивает `input()`,
+пароль — `getpass()`; проверки те же, что у `POST /auth/register`.
 
 ## Права внутри workspace
 
