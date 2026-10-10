@@ -14,6 +14,11 @@
 > CLI `tkl` и MCP-сервер `tkl-mcp` для агентов, админ-панель инстанса. Дальше — Redis (этап 9,
 > по необходимости) и интеграции с GitHub и GitLab (этап 10). Полная документация — в `docs/superpowers/specs/` (симлинк на Obsidian-vault).
 
+## Документация пользователя
+
+Как пользоваться веб-клиентом, админ-панелью, CLI `tkl` и MCP-сервером `tkl-mcp`, как установить
+и запустить проект — со скриншотами: [docs/guide/](docs/guide/README.md).
+
 ## Структура
 
 ```
@@ -24,8 +29,9 @@ frontend_shared/  токены темы, общие для обоих фронт
 sdk/              Python-клиент API, общий для CLI и MCP
 cli/              CLI tkl для агентов и терминала
 mcp/              MCP-сервер tkl-mcp для Claude, ChatGPT и других клиентов
+skills/           скилл taskanline для ИИ-агентов (ставится через skills.sh)
 deploy/           docker-compose и конфигурация nginx
-docs/             спецификации (симлинк в Obsidian)
+docs/             руководство пользователя (guide/) и спецификации (симлинк в Obsidian)
 ```
 
 Python-часть — один uv-workspace: `uv sync` в корне поднимает окружение для всех четырёх пакетов
@@ -211,6 +217,16 @@ Claude Desktop (`claude_desktop_config.json`) или Claude Code (`.mcp.json`):
 Удалённый режим для claude.ai и ChatGPT — `tkl-mcp --transport http --port 8765
 --allowed-host mcp.example.com` за HTTPS-прокси; клиент подключается к
 `https://mcp.example.com/mcp` и передаёт свой токен заголовком `Authorization: Bearer`.
+
+## Скилл для агентов
+
+`skills/taskanline/` — скилл, который учит агента (Claude Code, Codex, Cursor и других)
+работать с TasKanLine через MCP или `tkl`: с чего начинать, какие правила не нарушать, как
+читать коды выхода. Ставится через [skills.sh](https://skills.sh):
+
+```bash
+npx skills add yerza06/taskanline
+```
 
 ## Админ-панель
 
